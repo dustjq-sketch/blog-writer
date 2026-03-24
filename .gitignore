@@ -1,0 +1,34 @@
+# 환경 변수 / 시크릿 — 절대 커밋하지 말 것
+.env
+token.json
+credentials.json
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# 런타임 데이터 (개인 글감/발행 이력)
+data/topics/*.json
+data/collected/*.json
+data/discarded/*.json
+data/pending_review/*.json
+data/published/*.json
+data/analytics/*.json
+data/drafts/*.json
+data/images/
+data/images/pending_prompts.json
+
+# 로그
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
