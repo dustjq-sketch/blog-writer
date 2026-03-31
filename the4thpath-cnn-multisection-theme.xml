@@ -1,0 +1,1316 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html xmlns='http://www.w3.org/1999/xhtml' xmlns:b='http://www.google.com/2005/gml/b' xmlns:data='http://www.google.com/2005/gml/data' xmlns:expr='http://www.google.com/2005/gml/expr'>
+<head>
+<meta content='width=device-width, initial-scale=1' name='viewport'/>
+<b:include data='blog' name='all-head-content'/>
+<title><data:blog.pageTitle/></title>
+
+<b:skin><![CDATA[
+/* ══════════════════════════════════════════════════════
+   The 4th Path — CNN Multi-Section Layout
+   Independent Tech Media by 22B Labs
+   ══════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans KR', 'DM Sans', -apple-system, sans-serif;
+  background: #f0efeb;
+  color: #111;
+  line-height: 1.6;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: #111; text-decoration: none; transition: all 0.15s; }
+a:hover { color: #b8941e; }
+img { max-width: 100%; height: auto; }
+
+/* ══ TOP STRIP ══ */
+.ts { background: #000; font-size: 11px; color: #888; }
+.ts-i { max-width: 1320px; margin: 0 auto; padding: 7px 20px; display: flex; justify-content: space-between; align-items: center; }
+.ts-l { display: flex; align-items: center; gap: 12px; }
+.dot-live { width: 7px; height: 7px; background: #c8a84e; border-radius: 50%; animation: p 2s infinite; }
+@keyframes p { 0%,100%{opacity:1}50%{opacity:.3} }
+.ts a { color: #777; margin-left: 16px; }
+.ts a:hover { color: #c8a84e; }
+
+/* ══ MASTHEAD ══ */
+.mh { background: #fff; text-align: center; padding: 20px 20px 16px; border-bottom: 3px solid #000; }
+.mh-logo { font-family: 'Instrument Serif', Georgia, serif; font-size: 3.2em; font-weight: 400; color: #000; letter-spacing: -1px; }
+.mh-logo em { font-style: italic; color: #b8941e; }
+.mh-tag { font-family: 'DM Sans', sans-serif; font-size: 10px; color: #999; letter-spacing: 3.5px; text-transform: uppercase; margin-top: 5px; }
+
+/* ══ NAV ══ */
+.nav { background: #fff; border-bottom: 1px solid #e0e0e0; position: sticky; top: 0; z-index: 1000; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+.nav-i { max-width: 1320px; margin: 0 auto; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; }
+.pages-widget ul, .PageList ul { list-style: none; display: flex; justify-content: center; flex-wrap: wrap; margin: 0; padding: 0; }
+.nav a, .pages-widget a, .PageList a {
+  display: inline-block; color: #333; font-family: 'DM Sans'; font-size: 12px; font-weight: 600;
+  letter-spacing: 1.2px; text-transform: uppercase; padding: 13px 18px;
+  border-bottom: 2px solid transparent;
+}
+.nav a:hover, .pages-widget a:hover { color: #000; border-bottom-color: #c8a84e; }
+
+/* ══ HOMEPAGE SECTIONS ══ */
+.hp { max-width: 1320px; margin: 0 auto; padding: 0 20px; }
+
+/* ── Hero Section (최신 1개 대형) ── */
+.hero { padding: 28px 0; border-bottom: 2px solid #000; }
+.hero-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 28px; }
+.hero-main {}
+.hero-cat { font-family: 'DM Sans'; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #c8a84e; margin-bottom: 8px; }
+.hero-title { font-family: 'Noto Sans KR'; font-size: 2em; font-weight: 900; color: #000; line-height: 1.22; margin-bottom: 10px; letter-spacing: -0.5px; }
+.hero-title a { color: #000; }
+.hero-title a:hover { color: #b8941e; }
+.hero-meta { font-size: 11.5px; color: #999; margin-bottom: 10px; font-family: 'DM Sans'; }
+.hero-desc { font-size: 15px; color: #444; line-height: 1.7; }
+.hero-side { border-left: 1px solid #e0e0e0; padding-left: 24px; }
+.hero-side-item { padding: 14px 0; border-bottom: 1px solid #eee; }
+.hero-side-item:last-child { border-bottom: none; }
+.hero-side-cat { font-family: 'DM Sans'; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #c8a84e; margin-bottom: 4px; }
+.hero-side-title { font-size: 14px; font-weight: 700; color: #111; line-height: 1.35; }
+.hero-side-title a { color: #111; }
+.hero-side-title a:hover { color: #b8941e; }
+.hero-side-meta { font-size: 10.5px; color: #aaa; margin-top: 3px; font-family: 'DM Sans'; }
+
+/* ── Section Headers ── */
+.sec-head { display: flex; align-items: center; gap: 12px; padding: 20px 0 14px; border-bottom: 2px solid #000; margin-bottom: 20px; }
+.sec-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.sec-title { font-family: 'DM Sans'; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #000; }
+.sec-en { font-size: 11px; color: #bbb; letter-spacing: 1px; margin-left: 8px; }
+.sec-more { margin-left: auto; font-family: 'DM Sans'; font-size: 10px; font-weight: 600; color: #c8a84e; letter-spacing: 1px; text-transform: uppercase; }
+.sec-more:hover { color: #8b6914; }
+
+/* ── Card Grid (코너별 글 목록) ── */
+.card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 36px; }
+.card { background: #fff; border: 1px solid #e8e8e4; transition: box-shadow 0.2s; }
+.card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+.card-body { padding: 18px 20px 20px; }
+.card-cat { font-family: 'DM Sans'; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #c8a84e; margin-bottom: 6px; }
+.card-title { font-size: 15px; font-weight: 700; color: #000; line-height: 1.35; margin-bottom: 6px; }
+.card-title a { color: #000; }
+.card-title a:hover { color: #b8941e; }
+.card-meta { font-size: 10.5px; color: #aaa; font-family: 'DM Sans'; }
+.card-desc { font-size: 13px; color: #666; line-height: 1.6; margin-top: 8px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* ── Two Column Section ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 36px; }
+.list-item { padding: 14px 0; border-bottom: 1px solid #eee; display: flex; gap: 12px; }
+.list-item:last-child { border-bottom: none; }
+.list-num { font-family: 'Instrument Serif', serif; font-size: 2em; color: #e0e0da; font-weight: 400; line-height: 1; min-width: 32px; }
+.list-content {}
+.list-title { font-size: 14px; font-weight: 700; color: #111; line-height: 1.35; }
+.list-title a { color: #111; }
+.list-title a:hover { color: #b8941e; }
+.list-meta { font-size: 10px; color: #aaa; margin-top: 3px; font-family: 'DM Sans'; }
+
+/* ── Full Width Banner Section ── */
+.banner-sec { background: #0c0c10; padding: 28px 0; margin: 0 -20px 36px; }
+.banner-inner { max-width: 1320px; margin: 0 auto; padding: 0 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+.banner-card {}
+.banner-cat { font-family: 'DM Sans'; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #c8a84e; margin-bottom: 6px; }
+.banner-title { font-size: 15px; font-weight: 700; color: #fff; line-height: 1.35; margin-bottom: 4px; }
+.banner-title a { color: #fff; }
+.banner-title a:hover { color: #c8a84e; }
+.banner-meta { font-size: 10px; color: #666; font-family: 'DM Sans'; }
+
+/* ══ INDIVIDUAL POST PAGE (글 상세보기) ══ */
+.post-body, .entry-content {
+  font-family: 'Noto Sans KR', 'DM Sans', Georgia, sans-serif;
+  font-size: 17px; line-height: 1.9; color: #222; max-width: 720px;
+}
+.post-body h1 { font-size: 1.7em; font-weight: 800; color: #000; margin: 48px 0 14px; padding-bottom: 10px; border-bottom: 2px solid #c8a84e; }
+.post-body h2 { font-size: 1.3em; font-weight: 700; color: #111; margin: 40px 0 10px; padding-left: 14px; border-left: 3px solid #c8a84e; }
+.post-body h3 { font-size: 1.1em; font-weight: 700; color: #222; margin: 32px 0 6px; }
+.post-body p { margin-bottom: 22px; }
+.post-body code { font-family: 'IBM Plex Mono', monospace; background: #f4f4f0; padding: 2px 6px; border-radius: 2px; font-size: .87em; color: #8b4513; }
+.post-body pre { background: #0c0c10; color: #d4d4cc; padding: 20px 24px; overflow-x: auto; font-family: 'IBM Plex Mono'; font-size: .84em; line-height: 1.65; border-left: 3px solid #c8a84e; margin: 28px 0; }
+.post-body pre code { background: transparent; color: inherit; padding: 0; }
+.post-body table { width: 100%; border-collapse: collapse; margin: 28px 0; font-size: 13.5px; }
+.post-body th { background: #0c0c10; color: #fff; padding: 11px 14px; text-align: left; font-weight: 600; font-size: 11px; letter-spacing: .8px; text-transform: uppercase; }
+.post-body td { padding: 10px 14px; border-bottom: 1px solid #eee; }
+.post-body tr:hover td { background: #f5f5f0; }
+.post-body blockquote { border-left: 3px solid #c8a84e; padding: 4px 0 4px 24px; margin: 28px 0; font-family: 'Instrument Serif', serif; font-size: 1.15em; font-style: italic; color: #444; }
+.post-body a { color: #8b6914; text-decoration: underline; text-underline-offset: 3px; }
+.post-body a:hover { color: #b8941e; }
+.post-body hr { border: none; border-top: 1px solid #ddd; margin: 44px 0; }
+.post-body ul, .post-body ol { padding-left: 24px; margin-bottom: 20px; }
+.post-body li { margin-bottom: 6px; }
+
+.post-labels { margin-top: 12px; }
+.post-labels a { font-size: 10px; color: #888; letter-spacing: .5px; padding: 3px 8px; border: 1px solid #e8e8e5; margin-right: 4px; display: inline-block; }
+.post-labels a:hover { border-color: #c8a84e; color: #c8a84e; }
+
+/* ══ PAGINATION ══ */
+.blog-pager { text-align: center; padding: 32px 0; }
+.blog-pager a { display: inline-block; padding: 10px 28px; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #000; border: 1px solid #000; margin: 0 8px; }
+.blog-pager a:hover { background: #000; color: #fff; }
+
+/* ══ FOOTER ══ */
+.ft { background: #0c0c10; color: #777; margin-top: 48px; }
+.ft-i { max-width: 1320px; margin: 0 auto; padding: 44px 20px 24px; }
+.ft-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px; padding-bottom: 28px; border-bottom: 1px solid #1a1a20; }
+.ft-col-t { font-family: 'DM Sans'; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #c8a84e; margin-bottom: 12px; }
+.ft-col p { font-size: 13px; color: #666; line-height: 1.7; }
+.ft-col ul { list-style: none; }
+.ft-col li { padding: 3px 0; }
+.ft-col a { color: #888; font-size: 13px; }
+.ft-col a:hover { color: #c8a84e; }
+.ft-brand { font-family: 'Instrument Serif', serif; font-size: 1.5em; color: #fff; margin-bottom: 8px; }
+.ft-brand em { color: #c8a84e; }
+.ft-btm { padding-top: 16px; text-align: center; font-size: 10.5px; color: #444; letter-spacing: .8px; }
+.ft-btm a { color: #c8a84e; }
+
+/* ══ 한 컷 (One Cut) Cartoon Section ══ */
+.onecut-sec {
+  border-top: 2px solid #000;
+  border-bottom: 2px solid #000;
+  padding: 24px 0;
+  margin: 28px 0;
+  background: #faf9f6;
+}
+.onecut-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.onecut-badge {
+  background: #c8a84e;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 4px 12px;
+}
+.onecut-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #000;
+}
+.onecut-sublabel {
+  font-size: 11px;
+  color: #bbb;
+  letter-spacing: 1px;
+  margin-left: 6px;
+}
+.onecut-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.onecut-card {
+  display: flex;
+  gap: 20px;
+  background: #fff;
+  border: 1px solid #e8e8e4;
+  padding: 0;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+.onecut-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+.onecut-img {
+  width: 200px;
+  min-height: 150px;
+  background: #e8e8e4;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+.onecut-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.onecut-content {
+  padding: 18px 20px 18px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.onecut-title {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #000;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+.onecut-title a { color: #000; }
+.onecut-title a:hover { color: #b8941e; }
+.onecut-meta {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10.5px;
+  color: #aaa;
+}
+.onecut-desc {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+  margin-top: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* 한 컷이 1개만 있을 때 전체 너비 사용 */
+.onecut-single {
+  grid-template-columns: 1fr;
+}
+.onecut-single .onecut-card {
+  max-width: 100%;
+}
+.onecut-single .onecut-img {
+  width: 320px;
+  min-height: 200px;
+}
+.onecut-single .onecut-title {
+  font-size: 18px;
+}
+
+@media (max-width:768px) {
+  .onecut-grid { grid-template-columns: 1fr; }
+  .onecut-card { flex-direction: column; }
+  .onecut-img { width: 100%; min-height: 180px; }
+  .onecut-content { padding: 16px; }
+  .onecut-single .onecut-img { width: 100%; }
+}
+
+/* ══ Ad Slots ══ */
+.ad-slot {
+  background: #f7f7f5;
+  border: 1px dashed #ddd;
+  text-align: center;
+  padding: 20px;
+  margin: 28px 0;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: #bbb;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ad-slot-dark {
+  background: #13131a;
+  border-color: #2a2a30;
+  color: #444;
+}
+/* AdSense 승인 후: .ad-slot의 border/background/text를 제거하고 AdSense 코드를 안에 넣으면 됩니다 */
+
+/* ══ Loading skeleton ══ */
+.skel { background: linear-gradient(90deg, #f0f0ec 25%, #e8e8e4 50%, #f0f0ec 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 3px; }
+@keyframes shimmer { 0%{background-position:200% 0}100%{background-position:-200% 0} }
+.skel-title { height: 16px; width: 80%; margin-bottom: 8px; }
+.skel-meta { height: 10px; width: 40%; }
+
+/* ══ Post Page — Two Column Layout ══ */
+.post-page-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 36px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px 0;
+}
+.post-main { min-width: 0; }
+.post-sidebar {
+  border-left: 1px solid #e8e8e5;
+  padding-left: 24px;
+}
+.ps-section {
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+.ps-section:last-child { border-bottom: none; }
+.ps-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: #000;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #c8a84e;
+}
+.ps-nav-item {
+  display: block;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0ec;
+}
+.ps-nav-item:last-child { border-bottom: none; }
+.ps-nav-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  color: #c8a84e;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.ps-nav-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #222;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+.ps-nav-title:hover { color: #b8941e; }
+.ps-nav-date {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  color: #bbb;
+  margin-top: 2px;
+}
+.ps-prevnext a {
+  display: block;
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #f0f0ec;
+}
+.ps-prevnext a:hover { color: #b8941e; }
+.ps-prevnext .dir {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  color: #999;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.ps-corners { list-style: none; padding: 0; margin: 0; }
+.ps-corners li { padding: 7px 0; border-bottom: 1px solid #f0f0ec; }
+.ps-corners li:last-child { border-bottom: none; }
+.ps-corners a { font-size: 13px; color: #333; font-weight: 500; }
+.ps-corners a:hover { color: #b8941e; }
+.ps-corner-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 8px; }
+
+/* ══ Search Bar ══ */
+.nav-search {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  padding: 0 4px;
+}
+.nav-search-input {
+  font-family: 'Noto Sans KR', 'DM Sans', sans-serif;
+  font-size: 12px;
+  padding: 6px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 2px;
+  background: #fafaf8;
+  color: #333;
+  width: 0;
+  opacity: 0;
+  transition: width 0.3s, opacity 0.3s, padding 0.3s;
+  outline: none;
+}
+.nav-search-input.open {
+  width: 180px;
+  opacity: 1;
+  padding: 6px 12px;
+}
+.nav-search-input:focus { border-color: #c8a84e; }
+.nav-search-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #888;
+  padding: 13px 10px;
+  transition: color 0.15s;
+}
+.nav-search-btn:hover { color: #c8a84e; }
+
+/* ══ All Posts Page ══ */
+.allposts-page {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 28px 20px;
+}
+.allposts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #000;
+  margin-bottom: 24px;
+}
+.allposts-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.allposts-count {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: #999;
+}
+.allposts-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.allposts-filter {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.allposts-filter:hover, .allposts-filter.active {
+  border-color: #c8a84e;
+  color: #c8a84e;
+  background: #faf8f0;
+}
+.allposts-list { list-style: none; margin: 0; padding: 0; }
+.allposts-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0ec;
+  gap: 16px;
+}
+.allposts-item:hover { background: #faf9f6; }
+.allposts-item-left { flex: 1; min-width: 0; }
+.allposts-item-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #c8a84e;
+}
+.allposts-item-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+.allposts-item-title a { color: #111; }
+.allposts-item-title a:hover { color: #b8941e; }
+.allposts-item-date {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: #bbb;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ══ RESPONSIVE ══ */
+@media (max-width:1024px) {
+  .hero-grid { grid-template-columns: 1fr; }
+  .hero-side { border-left: none; padding-left: 0; border-top: 1px solid #eee; padding-top: 16px; }
+  .card-grid { grid-template-columns: repeat(2, 1fr); }
+  .banner-inner { grid-template-columns: 1fr; }
+  .two-col { grid-template-columns: 1fr; }
+  .ft-grid { grid-template-columns: 1fr; }
+  .post-page-grid { grid-template-columns: 1fr; }
+  .post-sidebar { border-left: none; padding-left: 0; border-top: 1px solid #e8e8e5; padding-top: 24px; }
+}
+@media (max-width:640px) {
+  .card-grid { grid-template-columns: 1fr; }
+  .mh-logo { font-size: 2.2em; }
+  .hero-title { font-size: 1.5em; }
+  .nav a { padding: 11px 10px; font-size: 10px; }
+  .nav-search-input.open { width: 120px; }
+  .ts .ts-right { display: none; }
+  .allposts-item { flex-direction: column; gap: 4px; }
+  .allposts-filters { gap: 4px; }
+  .allposts-filter { font-size: 10px; padding: 4px 10px; }
+}
+
+.header-widget { display: none; }
+.feed-links, .blog-feeds, .post-share-buttons { display: none; }
+]]></b:skin>
+
+</head>
+<body>
+
+<!-- ══ TOP STRIP ══ -->
+<div class='ts'>
+<div class='ts-i'>
+<div class='ts-l'><span class='dot-live'/><span style='color:#c8a84e;font-weight:700;font-size:11px;'>LIVE</span><span style='color:#666;'>Independent Tech Media</span></div>
+<div class='ts-right'><a href='/p/about.html'>About</a><a href='/p/contact.html'>Contact</a><a href='https://x.com/22blabs' target='_blank'>X</a></div>
+</div>
+</div>
+
+<!-- ══ MASTHEAD ══ -->
+<div class='mh'>
+<div class='mh-logo'>The 4th <em>Path</em></div>
+<div class='mh-tag'>Independent Tech Media by 22B Labs</div>
+</div>
+
+<!-- ══ NAV ══ -->
+<nav class='nav'>
+<div class='nav-i'>
+<a href='/'>Home</a>
+<a href='/search/label/쉬운세상'>쉬운세상</a>
+<a href='/search/label/숨은보물'>숨은보물</a>
+<a href='/search/label/바이브리포트'>바이브리포트</a>
+<a href='/search/label/팩트체크'>팩트체크</a>
+<a href='/search/label/한컷'>한컷</a>
+<a href='#' id='nav-allposts-link' onclick='showAllPosts(event)'>전체글</a>
+<div class='nav-search'>
+<input class='nav-search-input' id='nav-search-input' onkeydown='if(event.key==="Enter"){window.location.href="/search?q="+encodeURIComponent(this.value);}' placeholder='검색...' type='text'/>
+<button class='nav-search-btn' onclick='toggleSearch()' title='검색'>&#x1F50D;</button>
+</div>
+</div>
+</nav>
+
+<!-- 검색 토글 스크립트 -->
+<script>
+//<![CDATA[
+function toggleSearch(){
+  var input = document.getElementById('nav-search-input');
+  input.classList.toggle('open');
+  if(input.classList.contains('open')) input.focus();
+}
+//]]>
+</script>
+
+<!-- ══ HOMEPAGE SECTIONS (JavaScript로 코너별 렌더링) ══ -->
+<b:if cond='data:blog.url == data:blog.homepageUrl'>
+
+<div class='hp'>
+
+<!-- Hero Section -->
+<section class='hero'>
+<div class='hero-grid'>
+<div class='hero-main' id='hero-main'>
+<div class='skel skel-title' style='height:24px;width:60%;margin-bottom:12px;'/>
+<div class='skel skel-title' style='height:32px;width:90%;margin-bottom:8px;'/>
+<div class='skel skel-title' style='height:32px;width:70%;margin-bottom:12px;'/>
+<div class='skel skel-meta'/>
+</div>
+<div class='hero-side' id='hero-side'>
+<div style='padding:14px 0;'><div class='skel skel-title'/><div class='skel skel-meta'/></div>
+<div style='padding:14px 0;'><div class='skel skel-title'/><div class='skel skel-meta'/></div>
+<div style='padding:14px 0;'><div class='skel skel-title'/><div class='skel skel-meta'/></div>
+</div>
+</div>
+</section>
+
+<!-- ══ 한 컷 (One Cut) Cartoon Section ══ -->
+<section class='onecut-sec' id='onecut-section' style='display:none;'>
+<div class='onecut-head'>
+<span class='onecut-badge'>한 컷</span>
+<span class='onecut-label'>One Cut</span>
+<span class='onecut-sublabel'>— 한 장의 그림으로 세상을 읽는다</span>
+</div>
+<div class='onecut-grid' id='onecut-grid'>
+</div>
+</section>
+
+<!-- Section 1: 3-card grid -->
+<!-- AD SLOT 1: Hero 아래 (가장 높은 노출) -->
+<div class='ad-slot' id='ad-slot-1'>
+ADVERTISEMENT — AdSense 승인 후 이 자리에 광고 코드를 넣으세요
+</div>
+<section id='sec-grid-1' style='margin-bottom:8px;'/>
+
+<!-- Dark Banner Section -->
+<!-- AD SLOT 2: 카드 그리드 아래 -->
+<div class='ad-slot' id='ad-slot-2'>
+ADVERTISEMENT
+</div>
+<div id='dark-banner' style='margin:0 -20px;'/>
+
+<!-- Section 2: Two column numbered list -->
+<section id='sec-twocol'/>
+
+<!-- Section 3: Another 3-card grid -->
+<!-- AD SLOT 3: 리스트 아래 -->
+<div class='ad-slot' id='ad-slot-3'>
+ADVERTISEMENT
+</div>
+<section id='sec-grid-2'/>
+
+</div>
+
+<!-- JavaScript: Blogger Feed API로 코너별 글 렌더링 -->
+<script>
+//<![CDATA[
+(function(){
+  var blogUrl = "https://www.the4thpath.com";
+  var corners = [
+    {label:"", color:"#c8a84e", ko:"최신", en:"Latest"},
+  ];
+  
+  // 전체 글 가져오기
+  function fetchPosts(callback) {
+    var script = document.createElement('script');
+    script.src = blogUrl + '/feeds/posts/default?alt=json-in-script&max-results=20&callback=' + callback;
+    document.body.appendChild(script);
+  }
+  
+  window.renderHomepage = function(data) {
+    var entries = data.feed.entry || [];
+    if(entries.length === 0) return;
+    
+    var posts = entries.map(function(e){
+      var link = "";
+      for(var i=0;i<e.link.length;i++){
+        if(e.link[i].rel==="alternate"){link=e.link[i].href;break;}
+      }
+      var labels = [];
+      if(e.category){
+        for(var j=0;j<e.category.length;j++){
+          labels.push(e.category[j].term);
+        }
+      }
+      var snippet = "";
+      if(e.content) {
+        var tmp = document.createElement("div");
+        tmp.innerHTML = e.content.$t || "";
+        // Remove style, script, and noscript tags entirely
+        var badTags = tmp.querySelectorAll("style, script, noscript");
+        for(var k=0;k<badTags.length;k++) badTags[k].remove();
+        var rawText = tmp.textContent || tmp.innerText || "";
+        // Remove leftover CSS-like patterns
+        rawText = rawText.replace(/\.[a-zA-Z-]+[\s]*\{[^}]*\}/g, "");
+        rawText = rawText.replace(/@[a-zA-Z]+[^;{]*[{;][^}]*/g, "");
+        rawText = rawText.replace(/\s{2,}/g, " ").trim();
+        snippet = rawText.substring(0,220) + "...";
+      }
+      if(!snippet && e.summary) {
+        snippet = (e.summary.$t || "").replace(/<[^>]*>/g,"").substring(0,220) + "...";
+      }
+      var date = "";
+      if(e.published) {
+        var d = new Date(e.published.$t);
+        date = d.getFullYear() + "." + ("0"+(d.getMonth()+1)).slice(-2) + "." + ("0"+d.getDate()).slice(-2);
+      }
+      return {
+        title: e.title.$t,
+        url: link,
+        labels: labels,
+        snippet: snippet,
+        date: date
+      };
+    });
+    
+    // 한컷 라벨 글은 메인 피드에서 제외 (전용 섹션에서 별도 표시)
+    posts = posts.filter(function(p){
+      return p.labels.indexOf("한컷") === -1;
+    });
+    
+    // Helper: label에서 첫 번째 가져오기
+    function getLabel(p){ return p.labels.length > 0 ? p.labels[0] : ""; }
+    
+    // Helper: HTML 생성
+    function heroMainHTML(p){
+      return '<div class="hero-cat">' + getLabel(p) + '</div>' +
+        '<h2 class="hero-title"><a href="' + p.url + '">' + p.title + '</a></h2>' +
+        '<div class="hero-meta">' + p.date + ' · 22B Labs</div>' +
+        '<div class="hero-desc">' + p.snippet.substring(0,250) + '</div>';
+    }
+    
+    function heroSideHTML(p){
+      return '<div class="hero-side-item">' +
+        '<div class="hero-side-cat">' + getLabel(p) + '</div>' +
+        '<div class="hero-side-title"><a href="' + p.url + '">' + p.title + '</a></div>' +
+        '<div class="hero-side-meta">' + p.date + '</div></div>';
+    }
+    
+    function cardHTML(p){
+      return '<div class="card"><div class="card-body">' +
+        '<div class="card-cat">' + getLabel(p) + '</div>' +
+        '<div class="card-title"><a href="' + p.url + '">' + p.title + '</a></div>' +
+        '<div class="card-meta">' + p.date + '</div>' +
+        '<div class="card-desc">' + p.snippet.substring(0,120) + '</div>' +
+        '</div></div>';
+    }
+    
+    function listItemHTML(p, num){
+      return '<div class="list-item">' +
+        '<div class="list-num">' + num + '</div>' +
+        '<div class="list-content">' +
+        '<div class="list-title"><a href="' + p.url + '">' + p.title + '</a></div>' +
+        '<div class="list-meta">' + p.date + ' · ' + getLabel(p) + '</div>' +
+        '</div></div>';
+    }
+    
+    function bannerCardHTML(p){
+      return '<div class="banner-card">' +
+        '<div class="banner-cat">' + getLabel(p) + '</div>' +
+        '<div class="banner-title"><a href="' + p.url + '">' + p.title + '</a></div>' +
+        '<div class="banner-meta">' + p.date + '</div></div>';
+    }
+    
+    function secHeadHTML(ko, en, color, labelUrl){
+      var more = labelUrl ? '<a class="sec-more" href="' + labelUrl + '">More →</a>' : '';
+      return '<div class="sec-head">' +
+        '<span class="sec-dot" style="background:' + color + '"></span>' +
+        '<span class="sec-title">' + ko + '</span>' +
+        '<span class="sec-en">' + en + '</span>' +
+        more + '</div>';
+    }
+    
+    // ── Hero: 첫 1개 + 사이드 4개 ──
+    var heroEl = document.getElementById("hero-main");
+    var sideEl = document.getElementById("hero-side");
+    if(posts.length > 0) heroEl.innerHTML = heroMainHTML(posts[0]);
+    var sideHTML = "";
+    for(var s=1; s<Math.min(5, posts.length); s++){
+      sideHTML += heroSideHTML(posts[s]);
+    }
+    sideEl.innerHTML = sideHTML;
+    
+    // ── Section 1: 6~8번째 글 3개 카드 ──
+    var sec1 = document.getElementById("sec-grid-1");
+    var sec1HTML = secHeadHTML("최신 기사", "Latest Articles", "#c8a84e", "");
+    sec1HTML += '<div class="card-grid">';
+    for(var c=5; c<Math.min(8, posts.length); c++){
+      sec1HTML += cardHTML(posts[c]);
+    }
+    sec1HTML += '</div>';
+    sec1.innerHTML = sec1HTML;
+    
+    // ── Dark Banner: 9~11번째 글 ──
+    var banner = document.getElementById("dark-banner");
+    if(posts.length > 10){
+      var bHTML = '<div class="banner-sec"><div class="banner-inner">';
+      for(var b=8; b<Math.min(11, posts.length); b++){
+        bHTML += bannerCardHTML(posts[b]);
+      }
+      bHTML += '</div></div>';
+      banner.innerHTML = bHTML;
+    }
+    
+    // ── Two Column: 12~19번째 글 번호 리스트 ──
+    var twocol = document.getElementById("sec-twocol");
+    if(posts.length > 11){
+      var tHTML = secHeadHTML("더 많은 기사", "More Stories", "#333", "");
+      tHTML += '<div class="two-col"><div>';
+      var half = Math.min(15, posts.length);
+      var mid = 11 + Math.ceil((half - 11) / 2);
+      for(var t=11; t<mid; t++){
+        tHTML += listItemHTML(posts[t], t-10);
+      }
+      tHTML += '</div><div>';
+      for(var t2=mid; t2<half; t2++){
+        tHTML += listItemHTML(posts[t2], t2-10);
+      }
+      tHTML += '</div></div>';
+      twocol.innerHTML = tHTML;
+    }
+    
+    // ── Section 2: 나머지 3개 카드 ──
+    var sec2 = document.getElementById("sec-grid-2");
+    if(posts.length > 15){
+      var s2HTML = secHeadHTML("아카이브", "Archive", "#888", "");
+      s2HTML += '<div class="card-grid">';
+      for(var a=15; a<Math.min(18, posts.length); a++){
+        s2HTML += cardHTML(posts[a]);
+      }
+      s2HTML += '</div>';
+      sec2.innerHTML = s2HTML;
+    }
+  };
+  
+  fetchPosts("renderHomepage");
+  
+  // ── 한 컷 (One Cut) 전용 섹션 ──
+  // "한컷" 라벨이 달린 글만 별도로 가져와서 이미지와 함께 표시
+  window.renderOnecut = function(data) {
+    var entries = data.feed.entry || [];
+    if(entries.length === 0) return;
+    
+    var section = document.getElementById("onecut-section");
+    var grid = document.getElementById("onecut-grid");
+    var html = "";
+    var count = Math.min(entries.length, 4);
+    
+    if(count === 1) grid.className = "onecut-grid onecut-single";
+    
+    for(var i=0; i<count; i++){
+      var e = entries[i];
+      var link = "";
+      for(var j=0;j<e.link.length;j++){
+        if(e.link[j].rel==="alternate"){link=e.link[j].href;break;}
+      }
+      var title = e.title.$t || "";
+      var date = "";
+      if(e.published){
+        var d = new Date(e.published.$t);
+        date = d.getFullYear()+"."+ ("0"+(d.getMonth()+1)).slice(-2)+"."+ ("0"+d.getDate()).slice(-2);
+      }
+      
+      // 글 본문에서 첫 번째 이미지 추출
+      var imgUrl = "";
+      if(e.content && e.content.$t){
+        var tmpDiv = document.createElement("div");
+        tmpDiv.innerHTML = e.content.$t;
+        var firstImg = tmpDiv.querySelector("img");
+        if(firstImg) imgUrl = firstImg.src || firstImg.getAttribute("src") || "";
+      }
+      // 이미지 없으면 미디어 썸네일 시도
+      if(!imgUrl && e.media$thumbnail){
+        imgUrl = e.media$thumbnail.url || "";
+      }
+      
+      // 요약 추출
+      var desc = "";
+      if(e.content && e.content.$t){
+        var tmpDiv2 = document.createElement("div");
+        tmpDiv2.innerHTML = e.content.$t;
+        var badTags = tmpDiv2.querySelectorAll("style, script, noscript, img");
+        for(var k=0;k<badTags.length;k++) badTags[k].remove();
+        desc = (tmpDiv2.textContent || "").replace(/\s{2,}/g," ").trim().substring(0,100) + "...";
+      }
+      
+      var imgHTML = imgUrl 
+        ? '<div class="onecut-img"><img src="' + imgUrl + '" alt="' + title + '"/></div>'
+        : '<div class="onecut-img" style="background:#e8e8e4;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:11px;letter-spacing:1px;">IMAGE</div>';
+      
+      html += '<div class="onecut-card">' +
+        imgHTML +
+        '<div class="onecut-content">' +
+        '<div class="onecut-title"><a href="' + link + '">' + title + '</a></div>' +
+        '<div class="onecut-meta">' + date + ' · 22B Labs</div>' +
+        '<div class="onecut-desc">' + desc + '</div>' +
+        '</div></div>';
+    }
+    
+    grid.innerHTML = html;
+    section.style.display = "block";
+  };
+  
+  // "한컷" 라벨로 필터링해서 가져오기
+  var ocScript = document.createElement("script");
+  ocScript.src = blogUrl + "/feeds/posts/default/-/%ED%95%9C%EC%BB%B7?alt=json-in-script&max-results=4&callback=renderOnecut";
+  document.body.appendChild(ocScript);
+
+})();
+//]]>
+</script>
+
+</b:if>
+
+<!-- ══ 개별 글 페이지 (홈이 아닐 때) ══ -->
+<b:if cond='data:blog.url != data:blog.homepageUrl'>
+<div class='post-page-grid'>
+
+<!-- ── 본문 메인 영역 ── -->
+<div class='post-main'>
+<b:section class='main' id='main' showaddelement='no'>
+<b:widget id='Blog1' locked='true' title='Blog Posts' type='Blog'>
+<b:includable id='main' var='top'>
+<b:loop values='data:posts' var='post'>
+<b:include data='post' name='post'/>
+</b:loop>
+<b:include name='nextprev'/>
+</b:includable>
+
+<b:includable id='post' var='post'>
+<article style='padding-bottom:40px;'>
+<b:if cond='data:post.labels'>
+<div style='font-family:DM Sans;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#c8a84e;margin-bottom:10px;'>
+<b:loop values='data:post.labels' var='label'>
+<b:if cond='data:label.isLast != &quot;true&quot;'><data:label.name/> · <b:else/><data:label.name/></b:if>
+</b:loop>
+</div>
+</b:if>
+<h1 style='font-family:Noto Sans KR;font-size:2em;font-weight:900;color:#000;line-height:1.25;margin-bottom:10px;letter-spacing:-0.5px;'><data:post.title/></h1>
+<div style='font-size:12px;color:#999;margin-bottom:24px;font-family:DM Sans;padding-bottom:16px;border-bottom:1px solid #eee;'><data:post.dateHeader/> · 22B Labs · The 4th Path</div>
+<div class='post-body entry-content' expr:id='&quot;post-body-&quot; + data:post.id'>
+<data:post.body/>
+</div>
+<!-- AD SLOT: 글 하단 -->
+<div class='ad-slot' id='ad-post-bottom' style='margin:32px 0;'>
+ADVERTISEMENT
+</div>
+<b:if cond='data:post.labels'>
+<div class='post-labels' style='margin-top:24px;padding-top:16px;border-top:1px solid #eee;'>
+<b:loop values='data:post.labels' var='label'>
+<a expr:href='data:label.url' rel='tag'><data:label.name/></a>
+</b:loop>
+</div>
+</b:if>
+</article>
+<!-- 글 중간 광고 삽입 스크립트 -->
+<script>
+//<![CDATA[
+(function(){
+  var bodies = document.querySelectorAll('.post-body');
+  for(var i=0;i<bodies.length;i++){
+    var h2s = bodies[i].querySelectorAll('h2');
+    if(h2s.length >= 2){
+      var adDiv = document.createElement('div');
+      adDiv.className = 'ad-slot';
+      adDiv.id = 'ad-post-mid';
+      adDiv.style.margin = '28px 0';
+      adDiv.textContent = 'ADVERTISEMENT';
+      h2s[1].parentNode.insertBefore(adDiv, h2s[1]);
+    }
+  }
+})();
+//]]>
+</script>
+</b:includable>
+
+<b:includable id='nextprev'>
+<div class='blog-pager'>
+<b:if cond='data:newerPageUrl'><a expr:href='data:newerPageUrl'>← Newer</a></b:if>
+<b:if cond='data:olderPageUrl'><a expr:href='data:olderPageUrl'>Older →</a></b:if>
+</div>
+</b:includable>
+
+<b:includable id='comments' var='post'/>
+<b:includable id='status-message'>
+<b:if cond='data:navMessage'><div style='padding:12px 0;font-size:13px;color:#888;border-bottom:1px solid #eee;'><data:navMessage/></div></b:if>
+</b:includable>
+</b:widget>
+</b:section>
+</div>
+
+<!-- ── 사이드바 ── -->
+<aside class='post-sidebar'>
+
+<!-- 이전/다음 글 -->
+<div class='ps-section ps-prevnext' id='ps-prevnext'>
+<div class='ps-title'>Navigation</div>
+</div>
+
+<!-- 광고 -->
+<div class='ps-section'>
+<div class='ad-slot' id='ad-sidebar' style='min-height:250px;margin:0;'>ADVERTISEMENT</div>
+</div>
+
+<!-- 연관 글 (JS로 렌더링) -->
+<div class='ps-section'>
+<div class='ps-title'>Related Articles</div>
+<div id='ps-related'>
+<div class='skel skel-title' style='margin-bottom:12px;'/>
+<div class='skel skel-title' style='margin-bottom:12px;'/>
+<div class='skel skel-title' style='margin-bottom:12px;'/>
+</div>
+</div>
+
+<!-- 코너 바로가기 -->
+<div class='ps-section'>
+<div class='ps-title'>Corners</div>
+<ul class='ps-corners'>
+<li><span class='ps-corner-dot' style='background:#c8a84e;'/><a href='/search/label/쉬운세상'>쉬운 세상</a></li>
+<li><span class='ps-corner-dot' style='background:#3a7d5c;'/><a href='/search/label/숨은보물'>숨은 보물</a></li>
+<li><span class='ps-corner-dot' style='background:#4a5abf;'/><a href='/search/label/바이브리포트'>바이브 리포트</a></li>
+<li><span class='ps-corner-dot' style='background:#bf3a3a;'/><a href='/search/label/팩트체크'>팩트체크</a></li>
+<li><span class='ps-corner-dot' style='background:#8a7a2e;'/><a href='/search/label/한컷'>한 컷</a></li>
+</ul>
+</div>
+
+<!-- 광고 2 -->
+<div class='ps-section'>
+<div class='ad-slot' id='ad-sidebar-2' style='min-height:250px;margin:0;'>ADVERTISEMENT</div>
+</div>
+
+</aside>
+
+</div>
+
+<!-- 사이드바 연관 글 + 이전/다음 글 렌더링 JS -->
+<script>
+//<![CDATA[
+(function(){
+  var blogUrl = "https://www.the4thpath.com";
+  
+  // ── 이전/다음 글 렌더링 ──
+  var prevNext = document.getElementById("ps-prevnext");
+  var pagerLinks = document.querySelectorAll(".blog-pager a");
+  if(pagerLinks.length > 0 && prevNext){
+    var html = '<div class="ps-title">Navigation</div>';
+    for(var i=0;i<pagerLinks.length;i++){
+      var a = pagerLinks[i];
+      var dir = a.textContent.indexOf("Newer") >= 0 ? "← 이전 글" : "다음 글 →";
+      html += '<a class="ps-nav-item" href="' + a.href + '"><span class="dir">' + dir + '</span></a>';
+    }
+    prevNext.innerHTML = html;
+  }
+  
+  // ── 연관 글 렌더링 (최신 글 중 현재 글 제외) ──
+  window.renderRelated = function(data){
+    var entries = data.feed.entry || [];
+    var container = document.getElementById("ps-related");
+    if(!container || entries.length === 0) return;
+    
+    var currentUrl = window.location.href;
+    var html = "";
+    var count = 0;
+    
+    for(var i=0; i<entries.length && count<6; i++){
+      var e = entries[i];
+      var link = "";
+      for(var j=0;j<e.link.length;j++){
+        if(e.link[j].rel==="alternate"){link=e.link[j].href;break;}
+      }
+      if(link === currentUrl) continue;
+      
+      var labels = [];
+      if(e.category){
+        for(var k=0;k<e.category.length;k++) labels.push(e.category[k].term);
+      }
+      // 한컷 제외
+      if(labels.indexOf("한컷") >= 0) continue;
+      
+      var label = labels.length > 0 ? labels[0] : "";
+      var title = e.title.$t;
+      var date = "";
+      if(e.published){
+        var d = new Date(e.published.$t);
+        date = d.getFullYear()+"."+ ("0"+(d.getMonth()+1)).slice(-2)+"."+ ("0"+d.getDate()).slice(-2);
+      }
+      
+      html += '<a class="ps-nav-item" href="' + link + '" style="text-decoration:none;">' +
+        '<div class="ps-nav-label">' + label + '</div>' +
+        '<div class="ps-nav-title">' + title + '</div>' +
+        '<div class="ps-nav-date">' + date + '</div></a>';
+      count++;
+    }
+    container.innerHTML = html;
+  };
+  
+  var s = document.createElement("script");
+  s.src = blogUrl + "/feeds/posts/default?alt=json-in-script&max-results=15&callback=renderRelated";
+  document.body.appendChild(s);
+})();
+//]]>
+</script>
+
+</b:if>
+
+<!-- ══ ALL POSTS PAGE (전체글) ══ -->
+<div class='allposts-page' id='allposts-page' style='display:none;'>
+<div class='allposts-header'>
+<span class='allposts-title'>전체 글 목록 · All Articles</span>
+<span class='allposts-count' id='allposts-count'></span>
+</div>
+<div class='allposts-filters' id='allposts-filters'>
+<button class='allposts-filter active' onclick='filterPosts("all")'>전체</button>
+<button class='allposts-filter' onclick='filterPosts("쉬운세상")'>쉬운세상</button>
+<button class='allposts-filter' onclick='filterPosts("숨은보물")'>숨은보물</button>
+<button class='allposts-filter' onclick='filterPosts("바이브리포트")'>바이브리포트</button>
+<button class='allposts-filter' onclick='filterPosts("팩트체크")'>팩트체크</button>
+<button class='allposts-filter' onclick='filterPosts("한컷")'>한컷</button>
+</div>
+<ul class='allposts-list' id='allposts-list'>
+<li style='padding:20px 0;color:#bbb;text-align:center;'>Loading...</li>
+</ul>
+</div>
+
+<script>
+//<![CDATA[
+var allPostsData = [];
+var allPostsLoaded = false;
+
+function showAllPosts(e) {
+  if(e) e.preventDefault();
+  
+  // 홈페이지 콘텐츠 숨기기
+  var hp = document.querySelector('.hp');
+  var postPage = document.querySelector('.post-page-grid');
+  if(hp) hp.style.display = 'none';
+  if(postPage) postPage.style.display = 'none';
+  
+  // 전체글 페이지 보이기
+  var ap = document.getElementById('allposts-page');
+  ap.style.display = 'block';
+  
+  // 데이터 로드 (최초 1회)
+  if(!allPostsLoaded) loadAllPosts();
+}
+
+function hideAllPosts() {
+  var ap = document.getElementById('allposts-page');
+  if(ap) ap.style.display = 'none';
+  var hp = document.querySelector('.hp');
+  if(hp) hp.style.display = '';
+}
+
+function loadAllPosts() {
+  var blogUrl = "https://www.the4thpath.com";
+  
+  function fetch(startIndex, callback) {
+    var s = document.createElement('script');
+    s.src = blogUrl + '/feeds/posts/default?alt=json-in-script&max-results=50&start-index=' + startIndex + '&callback=' + callback;
+    document.body.appendChild(s);
+  }
+  
+  window._allPostsBatch1 = function(data) {
+    var entries = data.feed.entry || [];
+    entries.forEach(function(e) {
+      var link = '';
+      for(var i=0;i<e.link.length;i++) {
+        if(e.link[i].rel==='alternate'){link=e.link[i].href;break;}
+      }
+      var labels = [];
+      if(e.category) {
+        for(var j=0;j<e.category.length;j++) labels.push(e.category[j].term);
+      }
+      var date = '';
+      if(e.published) {
+        var d = new Date(e.published.$t);
+        date = d.getFullYear()+'.'+ ('0'+(d.getMonth()+1)).slice(-2)+'.'+ ('0'+d.getDate()).slice(-2);
+      }
+      allPostsData.push({
+        title: e.title.$t,
+        url: link,
+        labels: labels,
+        date: date
+      });
+    });
+    
+    // 50개 이상이면 다음 배치 로드
+    var total = parseInt(data.feed.openSearch$totalResults.$t) || 0;
+    if(allPostsData.length < total && entries.length === 50) {
+      fetch(allPostsData.length + 1, '_allPostsBatch2');
+    } else {
+      renderAllPosts('all');
+      allPostsLoaded = true;
+    }
+  };
+  
+  window._allPostsBatch2 = function(data) {
+    var entries = data.feed.entry || [];
+    entries.forEach(function(e) {
+      var link = '';
+      for(var i=0;i<e.link.length;i++) {
+        if(e.link[i].rel==='alternate'){link=e.link[i].href;break;}
+      }
+      var labels = [];
+      if(e.category) {
+        for(var j=0;j<e.category.length;j++) labels.push(e.category[j].term);
+      }
+      var date = '';
+      if(e.published) {
+        var d = new Date(e.published.$t);
+        date = d.getFullYear()+'.'+ ('0'+(d.getMonth()+1)).slice(-2)+'.'+ ('0'+d.getDate()).slice(-2);
+      }
+      allPostsData.push({
+        title: e.title.$t,
+        url: link,
+        labels: labels,
+        date: date
+      });
+    });
+    renderAllPosts('all');
+    allPostsLoaded = true;
+  };
+  
+  fetch(1, '_allPostsBatch1');
+}
+
+function renderAllPosts(filter) {
+  var list = document.getElementById('allposts-list');
+  var countEl = document.getElementById('allposts-count');
+  var filtered = filter === 'all' 
+    ? allPostsData 
+    : allPostsData.filter(function(p){ return p.labels.indexOf(filter) >= 0; });
+  
+  countEl.textContent = filtered.length + ' articles';
+  
+  if(filtered.length === 0) {
+    list.innerHTML = '<li style="padding:20px 0;color:#bbb;text-align:center;">No articles found.</li>';
+    return;
+  }
+  
+  var html = '';
+  for(var i=0; i<filtered.length; i++) {
+    var p = filtered[i];
+    var label = p.labels.length > 0 ? p.labels[0] : '';
+    html += '<li class="allposts-item">' +
+      '<div class="allposts-item-left">' +
+      '<div class="allposts-item-label">' + label + '</div>' +
+      '<div class="allposts-item-title"><a href="' + p.url + '">' + p.title + '</a></div>' +
+      '</div>' +
+      '<div class="allposts-item-date">' + p.date + '</div>' +
+      '</li>';
+  }
+  list.innerHTML = html;
+}
+
+function filterPosts(filter) {
+  // 필터 버튼 active 상태 변경
+  var btns = document.querySelectorAll('.allposts-filter');
+  for(var i=0;i<btns.length;i++) btns[i].classList.remove('active');
+  event.target.classList.add('active');
+  renderAllPosts(filter);
+}
+
+// Home 링크 클릭 시 전체글 페이지 숨기기
+document.addEventListener('DOMContentLoaded', function(){
+  var homeLinks = document.querySelectorAll('.nav a[href="/"]');
+  for(var i=0;i<homeLinks.length;i++){
+    homeLinks[i].addEventListener('click', function(e){
+      var ap = document.getElementById('allposts-page');
+      if(ap && ap.style.display === 'block'){
+        e.preventDefault();
+        hideAllPosts();
+      }
+    });
+  }
+});
+//]]>
+</script>
+
+<!-- ══ FOOTER ══ -->
+<footer class='ft'>
+<div class='ft-i'>
+<div class='ft-grid'>
+<div class='ft-col'>
+<div class='ft-brand'>The 4th <em>Path</em></div>
+<p>기존 미디어의 세 가지 길을 넘어 네 번째 길을 만듭니다. AI의 속도와 독립 미디어의 시각, 누구나 이해할 수 있는 설명의 조합.</p>
+<p style='margin-top:8px;font-size:11px;color:#555;'>Powered by 22B Labs</p>
+</div>
+<div class='ft-col'>
+<div class='ft-col-t'>Corners</div>
+<ul>
+<li><a href='/search/label/쉬운세상'>쉬운 세상</a></li>
+<li><a href='/search/label/숨은보물'>숨은 보물</a></li>
+<li><a href='/search/label/바이브리포트'>바이브 리포트</a></li>
+<li><a href='/search/label/팩트체크'>팩트체크</a></li>
+<li><a href='/search/label/한컷'>한 컷</a></li>
+</ul>
+</div>
+<div class='ft-col'>
+<div class='ft-col-t'>Links</div>
+<ul>
+<li><a href='/p/about.html'>About</a></li>
+<li><a href='/p/contact.html'>Contact</a></li>
+<li><a href='/p/privacy-policy.html'>Privacy Policy</a></li>
+<li><a href='https://x.com/22blabs' target='_blank'>X (Twitter)</a></li>
+</ul>
+</div>
+</div>
+<div class='ft-btm'>© 2026 <a href='/'>The 4th Path</a> · Independent Tech Media by <a href='#'>22B Labs</a></div>
+</div>
+</footer>
+
+<b:section class='hidden' id='sidebar' showaddelement='yes' visible='false'/>
+
+</body>
+</html>

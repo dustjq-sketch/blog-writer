@@ -280,10 +280,14 @@ def fetch_clips(
 
     result_clips: list[Path] = []
 
-    # 1. 사용자 제공 비디오 클립
+    # 1. 사용자 제공 비디오 클립 (Sora 2 영상 → 워터마크 자동 제거 후 사용)
+    from shorts.watermark_remover import remove_if_sora
     for i, user_clip in enumerate(manifest.get('user_clips', [])[:max_clips]):
+        src = Path(user_clip)
+        # Sora 2 워터마크 제거 (SoraWatermarkCleaner 설치 시 자동 적용)
+        src = remove_if_sora(src)
         out = clips_dir / f'clip_{i+1:02d}.mp4'
-        if _prepare_clip(Path(user_clip), out):
+        if _prepare_clip(src, out):
             result_clips.append(out)
 
     # 2. 사용자 제공 이미지 → Ken Burns

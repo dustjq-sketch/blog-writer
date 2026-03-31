@@ -23,7 +23,7 @@ from typing import Optional
 
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path='D:/key/blog-writer.env.env')
+load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / '.env')
 
 BASE_DIR = Path(__file__).parent.parent.parent
 LOG_DIR = BASE_DIR / 'logs'
@@ -594,12 +594,18 @@ class SoraEngine(VideoEngine):
     """
     OpenAI Sora 영상 생성 엔진.
     현재 API 공개 접근 불가 — ffmpeg_slides로 폴백.
+    scenes의 sora_prompt 필드가 있으면 구조화 프롬프트를 로깅하여 수동 제작 참고용으로 활용.
     """
 
     def __init__(self, cfg: dict):
         self.cfg = cfg
 
     def generate(self, scenes: list, output_path: str, **kwargs) -> str:
+        # 구조화 프롬프트가 있으면 참고용으로 출력
+        for i, scene in enumerate(scenes):
+            sora_prompt = scene.get('sora_prompt') or scene.get('image_prompt', '')
+            if sora_prompt:
+                logger.info(f"[Sora 프롬프트 #{i+1}]\n{sora_prompt}\n{'─'*40}")
         logger.warning("Sora API 미지원. ffmpeg_slides로 폴백.")
         return FFmpegSlidesEngine(self.cfg).generate(scenes, output_path, **kwargs)
 

@@ -23,7 +23,7 @@ from typing import Optional
 import requests
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path='D:/key/blog-writer.env.env')
+load_dotenv(dotenv_path=Path(__file__).parent.parent / '.env')
 
 BASE_DIR = Path(__file__).parent.parent
 ASSIST_DIR  = BASE_DIR / 'data' / 'assist'
@@ -167,8 +167,8 @@ def _prompt_request(title: str, body: str) -> str:
     }}
   ],
   "video_prompt": {{
-    "ko": "AI 영상 생성용 설명 (한국어)",
-    "en": "Short video generation prompt for Sora/Runway, cinematic, 10 seconds"
+    "ko": "AI 영상 생성용 설명 (한국어, 핵심 장면 요약)",
+    "en": "Scene Overview: 15-second cinematic shot [location]. [mood1], [mood2], [genre] atmosphere.\\n\\nCharacters: [visual description].\\n\\nAction Flow:\\n- [step1]\\n[step2]\\n[step3]\\nSmooth fade out to black.\\n\\nDialogue:\\n캐릭터: \\"[핵심 메시지를 담은 한국어 대사]\"\\n\\nAudio: [ambient sound], [effect sound], [voice tone]."
   }},
   "narration_script": "쇼츠 나레이션 스크립트 (30-60초 분량, 한국어, 자막 스타일)"
 }}"""
@@ -206,8 +206,19 @@ def generate_prompts(title: str, body: str) -> dict:
             {"purpose": "배경2",  "ko": "미니멀 배경",       "en": "Clean minimal background, soft light, 16:9"},
         ],
         "video_prompt": {
-            "ko": f"{title}에 관한 역동적인 정보 전달 영상",
-            "en": f"Cinematic explainer about {title}, 10 seconds, dynamic cuts",
+            "ko": f"{title}의 핵심 메시지를 담은 15초 시네마틱 영상",
+            "en": (
+                f"Scene Overview: 15-second cinematic shot in a modern dark space. "
+                f"Informative, cinematic, and engaging atmosphere.\n\n"
+                f"Characters: A glowing central figure representing the topic of {title}.\n\n"
+                f"Action Flow:\n"
+                f"- The figure stands in a dark space. Soft particles gather around it.\n"
+                f"Camera slowly zooms in. Key visual elements emerge from the background.\n"
+                f"The light intensifies. The camera pulls back to reveal the full scene.\n"
+                f"Smooth fade out to black.\n\n"
+                f"Dialogue:\n캐릭터: \"{title}에 대해 알아야 할 것들.\"\n\n"
+                f"Audio: Cinematic ambient drone, subtle data-pulse sound, calm narrator voice."
+            ),
         },
         "narration_script": f"{title}에 대해 알아봅시다. {body[:200]}",
     }

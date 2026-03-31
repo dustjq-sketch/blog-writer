@@ -18,7 +18,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path='D:/key/blog-writer.env.env')
+load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / '.env')
 
 BASE_DIR = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(BASE_DIR / 'bots'))
@@ -621,6 +621,23 @@ class NovelShortsConverter:
                 f"Dramatic lighting, rain-soaked streets of Seoul 2040. "
                 f"Vertical 9:16 cinematic shot. No text, no watermarks."
             )
+
+    def _scene_to_sora_prompt(self, scene: str, novel_config: dict, duration: int = 15) -> str:
+        """한국어 소설 장면 → Sora 2 구조화 프롬프트 (검증된 서식 적용)"""
+        import sys
+        sys.path.insert(0, str(__import__('pathlib').Path(__file__).parent.parent / 'shorts'))
+        from prompt_builder import llm_sora_prompt
+
+        genre = novel_config.get('genre', 'thriller')
+        atmosphere = novel_config.get('setting', {}).get('atmosphere', 'cinematic')
+        return llm_sora_prompt(
+            scene_text=scene,
+            genre=genre,
+            atmosphere=atmosphere,
+            writer=self.writer,
+            duration=duration,
+            has_dialogue=True,
+        )
 
     def _scene_to_image_prompt(self, scene: str, novel_config: dict) -> str:
         """DALL-E용 이미지 프롬프트 생성"""

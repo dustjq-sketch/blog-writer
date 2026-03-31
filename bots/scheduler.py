@@ -27,7 +27,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 import anthropic
 import re
 
-load_dotenv(dotenv_path='D:/key/blog-writer.env.env')
+load_dotenv(dotenv_path=Path(__file__).parent.parent / '.env')
 
 BASE_DIR = Path(__file__).parent.parent
 CONFIG_DIR = BASE_DIR / 'config'
