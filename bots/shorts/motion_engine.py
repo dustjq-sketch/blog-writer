@@ -39,38 +39,38 @@ PATTERNS = [
 PATTERN_FILTERS = {
     'ken_burns_in': (
         "scale=1120:1990,"
-        "zoompan=z='min(zoom+0.0008,1.08)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
+        "zoompan=z='min(zoom+0.0004,1.06)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
         ":d={dur_frames}:s=1080x1920:fps=30"
     ),
     'ken_burns_out': (
         "scale=1120:1990,"
-        "zoompan=z='if(lte(zoom,1.0),1.08,max(zoom-0.0008,1.0))'"
+        "zoompan=z='if(lte(zoom,1.0),1.06,max(zoom-0.0004,1.0))'"
         ":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
         ":d={dur_frames}:s=1080x1920:fps=30"
     ),
     'pan_left': (
         "scale=1200:1920,"
-        "crop=1080:1920:'min(iw-ow, (iw-ow)*t/{duration})':0"
+        "crop=1080:1920:'min(iw-ow, (iw-ow)*t/({duration}*1.5))':0"
     ),
     'pan_right': (
         "scale=1200:1920,"
-        "crop=1080:1920:'(iw-ow)*(1-t/{duration})':0"
+        "crop=1080:1920:'(iw-ow)*(1-t/({duration}*1.5))':0"
     ),
     'parallax': (
-        # Approximate parallax: zoom + horizontal pan
+        # Approximate parallax: zoom + horizontal pan (reduced amplitude)
         "scale=1200:1990,"
-        "zoompan=z='1.05':x='iw/2-(iw/zoom/2)+50*sin(2*PI*t/{duration})'"
+        "zoompan=z='1.04':x='iw/2-(iw/zoom/2)+25*sin(2*PI*t/({duration}*1.5))'"
         ":y='ih/2-(ih/zoom/2)':d={dur_frames}:s=1080x1920:fps=30"
     ),
     'rotate_slow': (
         "scale=1200:1200,"
-        "rotate='0.02*t':c=black:ow=1080:oh=1920"
+        "rotate='0.01*t':c=black:ow=1080:oh=1920"
     ),
     'glitch_reveal': (
         # Fade in with slight chromatic aberration approximation
         "scale=1080:1920,"
-        "fade=t=in:st=0:d=0.3,"
-        "hue=h='if(lt(t,0.3),10*sin(30*t),0)'"
+        "fade=t=in:st=0:d=0.5,"
+        "hue=h='if(lt(t,0.5),5*sin(15*t),0)'"
     ),
 }
 
