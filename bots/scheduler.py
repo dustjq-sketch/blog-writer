@@ -1097,18 +1097,19 @@ def setup_scheduler() -> AsyncIOScheduler:
                       day_of_week='mon,thu', hour=9, minute=0, id='novel_pipeline')
     logger.info("소설 파이프라인: 매주 월/목 09:00 등록")
 
-    # Shorts Bot: 10:35 (첫 번째), 16:00 (두 번째)
+    # Shorts Bot: shorts_config.json의 schedule.times 기준
     try:
         import json as _json
         shorts_cfg_path = CONFIG_DIR / 'shorts_config.json'
         if shorts_cfg_path.exists():
             _shorts_cfg = _json.loads(shorts_cfg_path.read_text(encoding='utf-8'))
             if _shorts_cfg.get('enabled', True):
-                scheduler.add_job(job_shorts_produce, 'cron',
-                                  hour=10, minute=35, id='shorts_produce_1')    # 10:35 첫 번째 쇼츠
-                scheduler.add_job(job_shorts_produce, 'cron',
-                                  hour=16, minute=0, id='shorts_produce_2')     # 16:00 두 번째 쇼츠
-                logger.info("Shorts Bot: 10:35, 16:00 등록")
+                _times = _shorts_cfg.get('schedule', {}).get('times', ['10:30', '16:00'])
+                for _i, _t in enumerate(_times):
+                    _h, _m = map(int, _t.split(':'))
+                    scheduler.add_job(job_shorts_produce, 'cron',
+                                      hour=_h, minute=_m, id=f'shorts_produce_{_i + 1}')
+                    logger.info(f"Shorts Bot: {_t} 등록 (shorts_produce_{_i + 1})")
     except Exception as _e:
         logger.warning(f"Shorts 스케줄 등록 실패: {_e}")
 
