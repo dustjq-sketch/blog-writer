@@ -148,7 +148,7 @@ def _extract_via_engine(post_text: str, cfg: dict) -> Optional[dict]:
     )
 
     try:
-        writer = EngineLoader(cfg_override={'writing': cfg.get('script', {}).get('llm_provider', 'openclaw')}).get_writer()
+        writer = EngineLoader().get_writer()
         raw = writer.write(prompt, system=system).strip()
         return _parse_json_response(raw)
     except Exception as e:
