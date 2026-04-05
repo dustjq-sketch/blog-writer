@@ -351,31 +351,32 @@ def generate_audio(slug: str, video_type: str = "shorts"):
 # ─────────────────────────────────────────
 
 def extract_section_weights(script_md: str, n_images: int) -> list:
-    """스크립트 섹션 텍스트 길이로 이미지 표시 비율 계산"""
-    lines = script_md.split("\n")
-    narration_lines, in_script = [], False
-    for line in lines:
-        if "## 스크립트" in line:
-            in_script = True
-            continue
-        if in_script and line.startswith("## "):
-            break
-        if in_script:
-            narration_lines.append(line)
+    """[후크]/[본론]/[결론]/[CTA] 마커 기반으로 이미지 표시 비율 계산"""
+    # 마커로 섹션 분리
+    parts = re.split(r'\[([^\]]+)\]', script_md)
+    # parts = ['앞부분', '마커', '내용', '마커', '내용', ...]
 
-    full = "\n".join(narration_lines)
-    paragraphs = [p.strip() for p in re.split(r'\n{2,}', full) if p.strip()]
+    sections = []
+    for i in range(1, len(parts) - 1, 2):
+        marker = parts[i].strip()
+        text = parts[i + 1] if i + 1 < len(parts) else ""
+        # 헤더/테이블/따옴표 제거하고 순수 나레이션만
+        text = re.sub(r'^\s*#.*$', '', text, flags=re.MULTILINE)
+        text = re.sub(r'^\s*\|.*$', '', text, flags=re.MULTILINE)
+        text = re.sub(r'["""\'*]', '', text).strip()
+        if text:
+            sections.append((marker, text))
 
-    if len(paragraphs) < n_images:
+    if not sections:
         return [1.0 / n_images] * n_images
 
-    per_group = max(1, len(paragraphs) // n_images)
+    # 섹션을 n_images 그룹으로 묶기 (앞에서 1개씩, 나머지 마지막으로)
+    per = max(1, len(sections) // n_images)
     groups = []
     for i in range(n_images):
-        start = i * per_group
-        end = start + per_group if i < n_images - 1 else len(paragraphs)
-        text = " ".join(paragraphs[start:end])
-        text = re.sub(r'\[.*?\]', '', text)
+        start = i * per
+        end = start + per if i < n_images - 1 else len(sections)
+        text = " ".join(v for _, v in sections[start:end])
         groups.append(max(len(text), 1))
 
     total = sum(groups)
@@ -411,9 +412,10 @@ def extract_section_weights(script_md: str, n_images: int) -> list:
     n = len(image_files)
     FADE = 0.6  # 크로스페이드 길이(초)
 
+    DISC_DUR = 4  # 면책 카드 길이(초)
     # 크로스페이드 오버랩을 고려한 총 이미지 시간
-    # 총 영상 = sum(이미지) + 3(면책) - n*FADE  →  sum(이미지) = audio - 3 + n*FADE
-    total_img_time = max(audio.duration - 3 + n * FADE, n * 2.0)
+    # 총 영상 = sum(이미지) + DISC_DUR - n*FADE  →  sum(이미지) = audio - DISC_DUR + n*FADE
+    total_img_time = max(audio.duration - DISC_DUR + n * FADE, n * 2.0)
 
     # 스크립트 섹션 길이로 이미지별 가중치 계산
     script_file = OUTPUTS_DIR / slug / f"{video_type}-script.md"
@@ -433,23 +435,42 @@ def extract_section_weights(script_md: str, n_images: int) -> list:
             clip = clip.crossfadein(FADE)
         clips.append(clip)
 
-    # 면책 자막 (마지막 3초) - PIL로 렌더링
+    # 면책 카드 (마지막 3초) - PIL 카드 스타일
     from PIL import Image as PILImage, ImageDraw as PILDraw
     import numpy as np
 
-    disc_img = PILImage.new('RGB', size, (13, 27, 42))
+    BG_C  = (13, 27, 42)
+    CARD_C = (22, 42, 62)
+    W_d, H_d = size
+
+    disc_img = PILImage.new('RGB', (W_d, H_d), BG_C)
     dd = PILDraw.Draw(disc_img)
+
+    # 채널명
+    dd.text((W_d//2, H_d//2 - 220), "리포트읽어드림",
+            font=_load_font(52), fill=(160, 170, 185), anchor="mm")
+
+    # 구분선
+    dd.line([(80, H_d//2 - 160), (W_d - 80, H_d//2 - 160)], fill=(40, 60, 80), width=2)
+
+    # 면책 카드 배경
+    _rounded_rect(dd, (60, H_d//2 - 130, W_d - 60, H_d//2 + 130), 20, CARD_C)
+
     disc_lines = [
         "본 영상은 리포트를 읽어드리는 것이며",
         "매수, 매도 추천이 아니며",
         "투자에 대한 책임은 본인에게 있습니다",
     ]
-    line_h = 70
-    start_y = size[1]//2 - line_h
     for j, line in enumerate(disc_lines):
-        dd.text((size[0]//2, start_y + j*line_h), line,
-                font=_load_font(48), fill=(255, 255, 255), anchor="mm")
-    disc_clip = ImageClip(np.array(disc_img)).set_duration(3).crossfadein(FADE)
+        dd.text((W_d//2, H_d//2 - 60 + j * 70), line,
+                font=_load_font(44), fill=(255, 255, 255), anchor="mm")
+
+    # 구독 CTA
+    dd.line([(80, H_d//2 + 160), (W_d - 80, H_d//2 + 160)], fill=(40, 60, 80), width=2)
+    dd.text((W_d//2, H_d//2 + 230), "구독하고 다음 리포트도 받아가세요!",
+            font=_load_font(42), fill=(220, 38, 38), anchor="mm")
+
+    disc_clip = ImageClip(np.array(disc_img)).set_duration(DISC_DUR).crossfadein(FADE)
     clips.append(disc_clip)
 
     video = concatenate_videoclips(clips, padding=-FADE, method="compose")
