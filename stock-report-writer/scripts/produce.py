@@ -350,7 +350,39 @@ def generate_audio(slug: str, video_type: str = "shorts"):
 # Step 4: 영상 조합 (MoviePy)
 # ─────────────────────────────────────────
 
-def generate_video(slug: str, video_type: str = "shorts"):
+def extract_section_weights(script_md: str, n_images: int) -> list:
+    """스크립트 섹션 텍스트 길이로 이미지 표시 비율 계산"""
+    lines = script_md.split("\n")
+    narration_lines, in_script = [], False
+    for line in lines:
+        if "## 스크립트" in line:
+            in_script = True
+            continue
+        if in_script and line.startswith("## "):
+            break
+        if in_script:
+            narration_lines.append(line)
+
+    full = "\n".join(narration_lines)
+    paragraphs = [p.strip() for p in re.split(r'\n{2,}', full) if p.strip()]
+
+    if len(paragraphs) < n_images:
+        return [1.0 / n_images] * n_images
+
+    per_group = max(1, len(paragraphs) // n_images)
+    groups = []
+    for i in range(n_images):
+        start = i * per_group
+        end = start + per_group if i < n_images - 1 else len(paragraphs)
+        text = " ".join(paragraphs[start:end])
+        text = re.sub(r'\[.*?\]', '', text)
+        groups.append(max(len(text), 1))
+
+    total = sum(groups)
+    return [g / total for g in groups]
+
+
+
     """이미지 + 음성 → mp4 조합"""
     from moviepy.editor import (
         ImageClip, AudioFileClip, concatenate_videoclips,
@@ -376,14 +408,27 @@ def generate_video(slug: str, video_type: str = "shorts"):
         return
 
     audio = AudioFileClip(str(audio_path))
-    dur_per_img = max((audio.duration - 3) / len(image_files), 1)
-
-    print(f"  영상 길이: {audio.duration:.1f}초 / 이미지 {len(image_files)}개")
-
+    n = len(image_files)
     FADE = 0.6  # 크로스페이드 길이(초)
+
+    # 크로스페이드 오버랩을 고려한 총 이미지 시간
+    # 총 영상 = sum(이미지) + 3(면책) - n*FADE  →  sum(이미지) = audio - 3 + n*FADE
+    total_img_time = max(audio.duration - 3 + n * FADE, n * 2.0)
+
+    # 스크립트 섹션 길이로 이미지별 가중치 계산
+    script_file = OUTPUTS_DIR / slug / f"{video_type}-script.md"
+    if script_file.exists() and n > 1:
+        weights = extract_section_weights(script_file.read_text(encoding="utf-8"), n)
+        durations = [max(total_img_time * w, 1.5) for w in weights]
+    else:
+        durations = [total_img_time / n] * n
+
+    print(f"  영상 길이: {audio.duration:.1f}초 / 이미지 {n}개")
+    print(f"  장면 길이: {' / '.join(f'{d:.1f}s' for d in durations)}")
+
     clips = []
-    for i, img_path in enumerate(image_files):
-        clip = ImageClip(str(img_path)).set_duration(dur_per_img).resize(size)
+    for i, (img_path, dur) in enumerate(zip(image_files, durations)):
+        clip = ImageClip(str(img_path)).set_duration(dur).resize(size)
         if i > 0:
             clip = clip.crossfadein(FADE)
         clips.append(clip)
