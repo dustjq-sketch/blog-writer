@@ -383,7 +383,7 @@ def extract_section_weights(script_md: str, n_images: int) -> list:
     return [g / total for g in groups]
 
 
-
+def generate_video(slug: str, video_type: str = "shorts"):
     """이미지 + 음성 → mp4 조합"""
     from moviepy.editor import (
         ImageClip, AudioFileClip, concatenate_videoclips,
