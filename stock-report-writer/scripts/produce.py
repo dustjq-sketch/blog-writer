@@ -28,50 +28,211 @@ if gac and not os.path.isabs(gac):
 
 
 # ─────────────────────────────────────────
-# Step 1: 이미지 생성 (Gemini API)
+# Step 1: 이미지 생성 (PIL - summary.md 기반)
 # ─────────────────────────────────────────
 
-def generate_images(slug: str):
-    """image-prompts.md의 프롬프트로 Gemini 이미지 생성"""
-    from google import genai
-    from google.genai import types
-    from PIL import Image
-
-    client = genai.Client(api_key=GEMINI_API_KEY)
-
-    prompts_file = OUTPUTS_DIR / slug / "images" / "image-prompts.md"
-    if not prompts_file.exists():
-        print(f"⚠️  image-prompts.md 없음: {prompts_file}")
-        return []
-
-    content = prompts_file.read_text(encoding="utf-8")
-    prompts = re.findall(r"```\n(.*?)\n```", content, re.DOTALL)
-
-    if not prompts:
-        print("⚠️  프롬프트를 찾을 수 없음")
-        return []
-
-    image_paths = []
-    for i, prompt in enumerate(prompts, 1):
-        print(f"  이미지 {i}/{len(prompts)} 생성 중...")
+def _load_font(size: int, bold: bool = False):
+    """macOS 한국어 폰트 로드"""
+    from PIL import ImageFont
+    candidates = [
+        ("/System/Library/Fonts/AppleSDGothicNeo.ttc", 1 if bold else 0),
+        ("/System/Library/Fonts/Supplemental/AppleGothic.ttf", 0),
+        ("/Library/Fonts/NanumGothicBold.ttf" if bold else "/Library/Fonts/NanumGothic.ttf", 0),
+    ]
+    for path, idx in candidates:
         try:
-            response = client.models.generate_content(
-                model="gemini-2.5-flash-image",
-                contents=prompt.strip(),
-                config=types.GenerateContentConfig(
-                    response_modalities=["IMAGE", "TEXT"]
-                ),
-            )
-            for part in response.candidates[0].content.parts:
-                if part.inline_data:
-                    img = Image.open(io.BytesIO(part.inline_data.data))
-                    out_path = OUTPUTS_DIR / slug / "images" / f"{slug}-img-{i:02d}.png"
-                    img.save(str(out_path))
-                    image_paths.append(out_path)
-                    print(f"  ✅ 저장: {out_path.name}")
-                    break
-        except Exception as e:
-            print(f"  ❌ 이미지 {i} 실패: {e}")
+            return ImageFont.truetype(path, size, index=idx)
+        except Exception:
+            continue
+    return ImageFont.load_default()
+
+
+def _rounded_rect(draw, xy, radius, fill):
+    """모서리가 둥근 사각형"""
+    x1, y1, x2, y2 = xy
+    draw.rectangle([x1 + radius, y1, x2 - radius, y2], fill=fill)
+    draw.rectangle([x1, y1 + radius, x2, y2 - radius], fill=fill)
+    for cx, cy in [(x1, y1), (x2 - 2*radius, y1), (x1, y2 - 2*radius), (x2 - 2*radius, y2 - 2*radius)]:
+        draw.ellipse([cx, cy, cx + 2*radius, cy + 2*radius], fill=fill)
+
+
+def _wrap_text(text: str, max_chars: int) -> list[str]:
+    """텍스트를 max_chars 기준으로 줄바꿈"""
+    if len(text) <= max_chars:
+        return [text]
+    # 공백 기준 자르기 시도
+    mid = len(text) // 2
+    split = text.rfind(' ', 0, mid + 5)
+    if split == -1:
+        split = mid
+    return [text[:split].strip(), text[split:].strip()]
+
+
+def generate_images(slug: str):
+    """summary.md 데이터를 PIL로 렌더링 → 한국어 정확한 인포그래픽 카드 3장"""
+    from PIL import Image, ImageDraw
+
+    summary_file = OUTPUTS_DIR / slug / "summary.md"
+    if not summary_file.exists():
+        print(f"⚠️  summary.md 없음: {summary_file}")
+        return []
+
+    content = summary_file.read_text(encoding="utf-8")
+
+    # ── 데이터 파싱 ──
+    def extract(pattern, default=""):
+        m = re.search(pattern, content)
+        return m.group(1).strip() if m else default
+
+    title_m = re.search(r'^# (.+?) \(', content, re.MULTILINE)
+    stock_name = title_m.group(1) if title_m else slug
+
+    broker   = extract(r'\*\*증권사\*\*[^:]*:\s*\**([^(\n\*]+)', "증권사")
+    opinion  = extract(r'\*\*투자의견\*\*:\s*(\w+)', "BUY")
+    cur_price = extract(r'현재가[^:]*:\s*\*\*([^\*\n]+)\*\*', "")
+    tgt_price = extract(r'목표주가[^:]*:\s*\*\*([^\*\n]+)\*\*', "")
+    upside   = extract(r'상승여력[^:]*:\s*\*\*([^\*\n]+)\*\*', "")
+
+    # 핵심 이유 제목 (볼드 숫자 뒤 텍스트)
+    reasons = re.findall(r'\*\*\d+\.\s*(.+?)\*\*', content)
+
+    # 실적 테이블
+    table_rows = re.findall(
+        r'\|\s*([^|\-][^|]*?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|',
+        content
+    )
+    metrics = [
+        (r[0].strip(), r[1].strip(), r[2].strip())
+        for r in table_rows
+        if r[0].strip() not in ('항목', '---', '----', '')
+    ]
+
+    images_dir = OUTPUTS_DIR / slug / "images"
+    images_dir.mkdir(exist_ok=True)
+
+    # ── 색상 팔레트 ──
+    BG       = (13,  27,  42)
+    WHITE    = (255, 255, 255)
+    RED      = (220,  38,  38)
+    GRAY     = (160, 170, 185)
+    CARD_BG  = (22,  42,  62)
+    GREEN    = (34,  197,  94)
+    BLUE     = (59,  130, 246)
+
+    W, H = 1080, 1920
+    image_paths = []
+
+    # ════════════════════════════════
+    # 카드 1: 목표주가
+    # ════════════════════════════════
+    img = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(img)
+
+    d.text((W//2, 110), "리포트읽어드림", font=_load_font(38), fill=GRAY, anchor="mm")
+    d.text((W//2, 195), broker.strip(), font=_load_font(44), fill=GRAY, anchor="mm")
+
+    d.text((W//2, 380), stock_name, font=_load_font(108, bold=True), fill=WHITE, anchor="mm")
+
+    # BUY 배지
+    bw, bh = 180, 64
+    bx, by = W//2 - bw//2, 470
+    _rounded_rect(d, (bx, by, bx+bw, by+bh), 32, RED)
+    d.text((W//2, by+bh//2), opinion, font=_load_font(46, bold=True), fill=WHITE, anchor="mm")
+
+    d.line([(80, 590), (W-80, 590)], fill=(40, 60, 80), width=2)
+
+    d.text((W//2, 680), "현재가", font=_load_font(46), fill=GRAY, anchor="mm")
+    d.text((W//2, 775), cur_price, font=_load_font(68, bold=True), fill=WHITE, anchor="mm")
+    d.text((W//2, 870), "▼", font=_load_font(52), fill=GRAY, anchor="mm")
+    d.text((W//2, 970), "목표주가", font=_load_font(46), fill=GRAY, anchor="mm")
+    d.text((W//2, 1100), tgt_price, font=_load_font(116, bold=True), fill=RED, anchor="mm")
+
+    d.line([(80, 1180), (W-80, 1180)], fill=(40, 60, 80), width=2)
+
+    d.text((W//2, 1290), f"상승여력  {upside}", font=_load_font(80, bold=True), fill=RED, anchor="mm")
+
+    d.text((W//2, 1870), f"출처: {broker.strip()}", font=_load_font(36), fill=GRAY, anchor="mm")
+
+    out = images_dir / f"{slug}-img-01.png"
+    img.save(str(out))
+    image_paths.append(out)
+    print(f"  ✅ 저장: {out.name}")
+
+    # ════════════════════════════════
+    # 카드 2: 핵심 이유 3가지
+    # ════════════════════════════════
+    img = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(img)
+
+    d.text((W//2, 110), "목표주가 상향 이유", font=_load_font(50), fill=GRAY, anchor="mm")
+    d.text((W//2, 230), "핵심 3가지", font=_load_font(100, bold=True), fill=WHITE, anchor="mm")
+
+    card_y = 370
+    num_colors = [RED, GREEN, BLUE]
+    num_labels = ["①", "②", "③"]
+
+    for i, reason in enumerate(reasons[:3]):
+        card_h = 200
+        _rounded_rect(d, (60, card_y, W-60, card_y+card_h), 20, CARD_BG)
+
+        d.text((130, card_y+card_h//2), num_labels[i],
+               font=_load_font(64, bold=True), fill=num_colors[i], anchor="mm")
+
+        lines = _wrap_text(reason, 14)
+        if len(lines) == 1:
+            d.text((200, card_y+card_h//2), lines[0],
+                   font=_load_font(46, bold=True), fill=WHITE, anchor="lm")
+        else:
+            d.text((200, card_y+card_h//2 - 30), lines[0],
+                   font=_load_font(44, bold=True), fill=WHITE, anchor="lm")
+            d.text((200, card_y+card_h//2 + 30), lines[1],
+                   font=_load_font(44, bold=True), fill=GRAY, anchor="lm")
+
+        card_y += card_h + 30
+
+    # 목표주가 요약
+    sum_y = card_y + 40
+    d.text((W//2, sum_y), f"목표주가  {tgt_price}",
+           font=_load_font(66, bold=True), fill=RED, anchor="mm")
+    d.text((W//2, sum_y+90), f"상승여력  {upside}",
+           font=_load_font(54), fill=RED, anchor="mm")
+
+    d.text((W//2, 1870), f"출처: {broker.strip()}", font=_load_font(36), fill=GRAY, anchor="mm")
+
+    out = images_dir / f"{slug}-img-02.png"
+    img.save(str(out))
+    image_paths.append(out)
+    print(f"  ✅ 저장: {out.name}")
+
+    # ════════════════════════════════
+    # 카드 3: 실적 하이라이트
+    # ════════════════════════════════
+    img = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(img)
+
+    d.text((W//2, 120), stock_name, font=_load_font(86, bold=True), fill=WHITE, anchor="mm")
+    d.text((W//2, 240), "1분기 실적 Preview", font=_load_font(52), fill=GRAY, anchor="mm")
+    d.line([(80, 310), (W-80, 310)], fill=(40, 60, 80), width=2)
+
+    row_y = 360
+    for item, val, change in metrics[:6]:
+        rh = 150
+        _rounded_rect(d, (60, row_y, W-60, row_y+rh), 16, CARD_BG)
+        d.text((110, row_y+rh//2), item,
+               font=_load_font(42), fill=GRAY, anchor="lm")
+        d.text((W-110, row_y+rh//2 - 22), val,
+               font=_load_font(50, bold=True), fill=WHITE, anchor="rm")
+        c_color = RED if "+" in change else GRAY
+        d.text((W-110, row_y+rh//2 + 28), change,
+               font=_load_font(38), fill=c_color, anchor="rm")
+        row_y += rh + 20
+
+    d.text((W//2, 1870), f"출처: {broker.strip()}", font=_load_font(36), fill=GRAY, anchor="mm")
+
+    out = images_dir / f"{slug}-img-03.png"
+    img.save(str(out))
+    image_paths.append(out)
+    print(f"  ✅ 저장: {out.name}")
 
     return image_paths
 
@@ -193,7 +354,7 @@ def generate_video(slug: str, video_type: str = "shorts"):
     """이미지 + 음성 → mp4 조합"""
     from moviepy.editor import (
         ImageClip, AudioFileClip, concatenate_videoclips,
-        TextClip, CompositeVideoClip, ColorClip,
+        CompositeVideoClip, ColorClip,
     )
 
     audio_path = OUTPUTS_DIR / slug / f"audio-{video_type}.mp3"
@@ -224,22 +385,24 @@ def generate_video(slug: str, video_type: str = "shorts"):
         clip = ImageClip(str(img_path)).set_duration(dur_per_img).resize(size)
         clips.append(clip)
 
-    # 면책 자막 (마지막 3초)
-    disclaimer = (
-        "본 영상은 리포트를 읽어드리는 것이며\n"
-        "매수, 매도 추천이 아니며\n"
-        "투자에 대한 책임은 본인에게 있습니다"
-    )
-    bg = ColorClip(size=size, color=(13, 27, 42)).set_duration(3)
-    try:
-        txt = (
-            TextClip(disclaimer, fontsize=48, color="white",
-                     size=(size[0] - 100, None), method="caption", align="center")
-            .set_duration(3).set_position("center")
-        )
-        clips.append(CompositeVideoClip([bg, txt]))
-    except Exception:
-        clips.append(bg)   # 폰트 없으면 배경만
+    # 면책 자막 (마지막 3초) - PIL로 렌더링
+    from PIL import Image as PILImage, ImageDraw as PILDraw
+    import numpy as np
+
+    disc_img = PILImage.new('RGB', size, (13, 27, 42))
+    dd = PILDraw.Draw(disc_img)
+    disc_lines = [
+        "본 영상은 리포트를 읽어드리는 것이며",
+        "매수, 매도 추천이 아니며",
+        "투자에 대한 책임은 본인에게 있습니다",
+    ]
+    line_h = 70
+    start_y = size[1]//2 - line_h
+    for j, line in enumerate(disc_lines):
+        dd.text((size[0]//2, start_y + j*line_h), line,
+                font=_load_font(48), fill=(255, 255, 255), anchor="mm")
+    disc_clip = ImageClip(np.array(disc_img)).set_duration(3)
+    clips.append(disc_clip)
 
     video = concatenate_videoclips(clips, method="compose")
     video = video.set_audio(audio.set_duration(video.duration))
