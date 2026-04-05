@@ -96,16 +96,16 @@ def generate_images(slug: str):
     # 핵심 이유 제목 (볼드 숫자 뒤 텍스트)
     reasons = re.findall(r'\*\*\d+\.\s*(.+?)\*\*', content)
 
-    # 실적 테이블
-    table_rows = re.findall(
-        r'\|\s*([^|\-][^|]*?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|',
-        content
-    )
-    metrics = [
-        (r[0].strip(), r[1].strip(), r[2].strip())
-        for r in table_rows
-        if r[0].strip() not in ('항목', '---', '----', '')
-    ]
+    # 실적 테이블 - 라인별 파싱 (정규식보다 안정적)
+    metrics = []
+    for line in content.split('\n'):
+        line = line.strip()
+        if not line.startswith('|') or '---' in line:
+            continue
+        parts = [p.strip() for p in line.strip('|').split('|')]
+        if len(parts) < 3 or parts[0] in ('항목', '타임코드', ''):
+            continue
+        metrics.append((parts[0], parts[1], parts[2]))
 
     images_dir = OUTPUTS_DIR / slug / "images"
     images_dir.mkdir(exist_ok=True)
@@ -352,32 +352,40 @@ def generate_audio(slug: str, video_type: str = "shorts"):
 
 def extract_section_weights(script_md: str, n_images: int) -> list:
     """[후크]/[본론]/[결론]/[CTA] 마커 기반으로 이미지 표시 비율 계산"""
+    # ## 스크립트 섹션만 추출 (--- 또는 다음 ## 이전까지)
+    script_section = ""
+    in_script = False
+    for line in script_md.split('\n'):
+        if '## 스크립트' in line:
+            in_script = True
+            continue
+        if in_script and (line.startswith('## ') or line.strip() == '---'):
+            break
+        if in_script:
+            script_section += line + '\n'
+
+    if not script_section.strip():
+        return [1.0 / n_images] * n_images
+
     # 마커로 섹션 분리
-    parts = re.split(r'\[([^\]]+)\]', script_md)
-    # parts = ['앞부분', '마커', '내용', '마커', '내용', ...]
+    parts = re.split(r'\[([^\]]+)\]', script_section)
 
     sections = []
     for i in range(1, len(parts) - 1, 2):
-        marker = parts[i].strip()
         text = parts[i + 1] if i + 1 < len(parts) else ""
-        # 헤더/테이블/따옴표 제거하고 순수 나레이션만
-        text = re.sub(r'^\s*#.*$', '', text, flags=re.MULTILINE)
-        text = re.sub(r'^\s*\|.*$', '', text, flags=re.MULTILINE)
         text = re.sub(r'["""\'*]', '', text).strip()
         if text:
-            sections.append((marker, text))
+            sections.append(text)
 
     if not sections:
         return [1.0 / n_images] * n_images
 
-    # 섹션을 n_images 그룹으로 묶기 (앞에서 1개씩, 나머지 마지막으로)
     per = max(1, len(sections) // n_images)
     groups = []
     for i in range(n_images):
         start = i * per
         end = start + per if i < n_images - 1 else len(sections)
-        text = " ".join(v for _, v in sections[start:end])
-        groups.append(max(len(text), 1))
+        groups.append(max(sum(len(s) for s in sections[start:end]), 1))
 
     total = sum(groups)
     return [g / total for g in groups]
