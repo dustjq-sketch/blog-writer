@@ -380,9 +380,12 @@ def generate_video(slug: str, video_type: str = "shorts"):
 
     print(f"  영상 길이: {audio.duration:.1f}초 / 이미지 {len(image_files)}개")
 
+    FADE = 0.6  # 크로스페이드 길이(초)
     clips = []
-    for img_path in image_files:
+    for i, img_path in enumerate(image_files):
         clip = ImageClip(str(img_path)).set_duration(dur_per_img).resize(size)
+        if i > 0:
+            clip = clip.crossfadein(FADE)
         clips.append(clip)
 
     # 면책 자막 (마지막 3초) - PIL로 렌더링
@@ -401,10 +404,10 @@ def generate_video(slug: str, video_type: str = "shorts"):
     for j, line in enumerate(disc_lines):
         dd.text((size[0]//2, start_y + j*line_h), line,
                 font=_load_font(48), fill=(255, 255, 255), anchor="mm")
-    disc_clip = ImageClip(np.array(disc_img)).set_duration(3)
+    disc_clip = ImageClip(np.array(disc_img)).set_duration(3).crossfadein(FADE)
     clips.append(disc_clip)
 
-    video = concatenate_videoclips(clips, method="compose")
+    video = concatenate_videoclips(clips, padding=-FADE, method="compose")
     video = video.set_audio(audio.set_duration(video.duration))
     video.write_videofile(str(output_path), fps=24, codec="libx264",
                           audio_codec="aac", threads=4, logger=None)
