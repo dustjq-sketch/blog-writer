@@ -1,137 +1,125 @@
-# 주식 리포트 콘텐츠 자동화 시스템
+# 증권사 리포트 → 유튜브 콘텐츠 자동화 시스템
 
-주식 리포트를 수집·분석하여 블로그 글과 유튜브 스크립트를 자동으로 생성하는 멀티 에이전트 시스템입니다.
-zoey.day의 블로그 자동화 구조를 참고하여, 각 종목마다 독립적인 오케스트레이터를 할당하는 패턴으로 설계되었습니다.
+증권사 리포트(PDF 또는 MD 파일)를 입력받아 다음을 자동 생성합니다:
+- **유튜브 쇼츠 스크립트** (30~60초) ← 핵심 산출물
+- **유튜브 풀영상 스크립트** (5~8분)
+- **차트 & 인포그래픽 이미지** (본문용)
+- **썸네일** (쇼츠용 + 풀영상용)
+
+블로그 글은 별도 시스템에서 운영 중이므로 이 프로젝트에서는 제외합니다.
 
 ---
 
-## 시스템 철학
+## 사용 방법
 
-- **에이전트 vs 스킬 구분**: 판단이 필요한 역할은 에이전트, 가이드라인만 필요한 역할은 스킬
-- **오케스트레이터 패턴**: 각 종목마다 독립적인 Report Orchestrator 할당 → 컨텍스트 명확, 에러 격리, 병렬 처리
-- **레퍼런스 우선**: 각 스킬의 references/ 폴더에 충분한 예시를 넣어야 결과물 품질이 높아짐
-- **MECE 관리**: stock-watchlist.md로 중복 종목 방지, 누적 히스토리 관리
+```bash
+# 방법 1: 파일을 reports/ 폴더에 넣고 요청
+"reports/삼성전자-한국투자증권-20260405.pdf 로 콘텐츠 만들어줘"
+
+# 방법 2: 파일 직접 첨부 후 요청
+"이 리포트로 쇼츠 스크립트랑 썸네일 만들어줘"
+
+# 방법 3: 여러 리포트 한번에
+"reports/ 폴더에 있는 리포트 3개 전부 콘텐츠 만들어줘"
+```
 
 ---
 
 ## 워크플로우
 
 ```
-User Input ("오늘 분석할 종목 추천해줘" or 직접 종목 입력)
-    ↓
-[Stock Hunter Agent] - 종목 3~5개 발굴 + 리포트 출처 제안
-    ↓
-사용자 선택 (종목 2~3개 선택)
-    ↓
-    ┌──────────────────┼──────────────────┐
-    ▼                  ▼                  ▼
-Report Orch. #1   Report Orch. #2   Report Orch. #3   ← 병렬 실행!
-    │
-    Phase 1: 리포트 수집 & 핵심 분석 (Stock Analyst Skill)
-    Phase 2: 블로그 글 작성 (Blog Writer Skill)
-    Phase 3: 유튜브 스크립트 작성 (YouTube Script Skill)
-    Phase 4: 본문 이미지 생성 (Image Generator Skill)
-    Phase 5: 썸네일 생성 (Thumbnail Creator Skill)
-    Phase 6: 메타데이터 생성 (slug, 태그, 디스크립션)
-    │
-    └──────────────────┼──────────────────┘
-                       ▼
-    [Content Reviewer Agent] - 팩트 체크 + 통합 검수 + 발행 전략
-                       ↓
-    Outputs/[slug]/ 폴더에 정리 저장
+리포트 파일 (PDF or MD)
+        ↓
+[Report Producer Agent]
+        │
+        Step 1: Report Parser Skill
+        │       리포트에서 핵심 정보 추출
+        │       → 종목명, 목표주가, 핵심 이유 3가지, 리스크
+        │       → Outputs/[slug]/summary.md 저장
+        │
+        Step 2~4: 병렬 실행 ──────────────────────────┐
+        │                                             │
+        ▼                                             ▼
+[Shorts Writer Skill]                    [YouTube Script Skill]
+  30~60초 쇼츠 스크립트                    5~8분 풀영상 스크립트
+  → shorts-script.md                    → youtube-script.md
+        │
+        Step 3: Image Generator Skill (병렬)
+        │       목표주가 비교 카드, 핵심 지표 인포그래픽
+        │       → images/ 폴더
+        │
+        Step 5: Thumbnail Creator Skill
+                쇼츠 썸네일 (1080x1920 세로)
+                풀영상 썸네일 (1280x720 가로)
+                → thumbnail-shorts.png
+                → thumbnail-youtube.png
 ```
 
 ---
 
-## 프로젝트 구조
+## 폴더 구조
 
 ```
 stock-report-writer/
-├── CLAUDE.md                          # 이 파일 (전체 시스템 설명서)
-├── ORCHESTRATOR.md                    # 오케스트레이터 상세 기획서
+├── CLAUDE.md                           # 이 파일 (전체 시스템 설명)
+│
+├── reports/                            # 리포트 파일 넣는 곳 (PDF or MD)
+│   └── (여기에 증권사 리포트 파일 추가)
 │
 ├── .claude/
 │   ├── agents/
-│   │   ├── stock-hunter.md            # 종목 발굴 에이전트
-│   │   ├── report-orchestrator.md     # 종목별 전체 프로세스 오케스트레이터 (병렬)
-│   │   └── content-reviewer.md        # 콘텐츠 검수 에이전트 (일괄)
-│   │
+│   │   └── report-producer.md          # 전체 프로세스 총괄
 │   └── skills/
-│       ├── stock-analyst/
-│       │   ├── SKILL.md               # 리포트 분석 & 핵심 요약 스킬
+│       ├── report-parser/
+│       │   ├── SKILL.md                # 리포트 핵심 정보 추출
 │       │   └── references/
-│       │       ├── report-examples.md # 잘 정리된 리포트 요약 예시
-│       │       └── stock-terminology.md # 주식 용어 사전 (독자 친화적 설명)
-│       │
-│       ├── blog-writer/
-│       │   ├── SKILL.md               # SEO 블로그 글 작성 스킬
+│       │       └── report-examples.md  # 파싱 예시
+│       ├── shorts-writer/
+│       │   ├── SKILL.md                # 30~60초 쇼츠 스크립트 작성
 │       │   └── references/
-│       │       ├── blog-examples.md   # 기존 블로그 글 예시 (톤앤매너)
-│       │       └── cta-templates.md   # CTA 문구 모음
-│       │
+│       │       └── shorts-examples.md  # 쇼츠 스크립트 예시
 │       ├── youtube-script/
-│       │   ├── SKILL.md               # 유튜브 스크립트 작성 스킬
+│       │   ├── SKILL.md                # 5~8분 풀영상 스크립트 작성
 │       │   └── references/
-│       │       └── script-examples.md # 유튜브 스크립트 예시 (후크, 구성)
-│       │
+│       │       └── script-examples.md  # 풀영상 스크립트 예시
 │       ├── image-generator/
-│       │   ├── SKILL.md               # 본문 이미지 생성 스킬 (gemini-2.0-flash)
+│       │   ├── SKILL.md                # 차트 & 인포그래픽 생성 (Gemini)
 │       │   └── references/
-│       │       └── image-style-guide.md # 이미지 스타일 가이드
-│       │
+│       │       └── image-style-guide.md
 │       └── thumbnail-creator/
-│           ├── SKILL.md               # 썸네일 생성 스킬 (gemini-2.0-flash)
+│           ├── SKILL.md                # 썸네일 생성 (Gemini)
 │           └── references/
-│               └── thumbnail-examples/ # 기존 썸네일 이미지들 (스타일 참조)
+│               └── thumbnail-examples/ # 기존 썸네일 (스타일 참조용)
 │
 └── Outputs/
-    ├── stock-watchlist.md             # 분석한 종목 히스토리 (누적, 중복 방지)
-    ├── report-briefs.md               # 리포트 기획서 히스토리 (누적)
-    ├── content-review.md              # 콘텐츠 검수 보고서
-    └── [slug]/                        # 종목별 결과물 폴더 (예: samsung-q1-2026)
-        ├── brief.md                   # 분석 기획서
-        ├── blog-post.md               # 블로그 글 (마크다운)
-        ├── youtube-script.md          # 유튜브 스크립트
-        ├── images/                    # 본문 이미지
-        ├── thumbnail.png              # 썸네일
-        └── metadata.json             # SEO 메타데이터 (제목, 디스크립션, 태그, slug)
+    ├── history.md                      # 작업 히스토리 (누적)
+    └── [ticker-YYYYMMDD]/              # 예: samsung-20260405
+        ├── summary.md                  # 파싱된 핵심 요약
+        ├── shorts-script.md            # 쇼츠 스크립트 (30~60초)
+        ├── youtube-script.md           # 풀영상 스크립트 (5~8분)
+        ├── images/                     # 차트, 인포그래픽
+        ├── thumbnail-shorts.png        # 쇼츠 썸네일 (세로형)
+        └── thumbnail-youtube.png       # 풀영상 썸네일 (가로형)
 ```
 
 ---
 
-## 에이전트 역할 요약
+## 에이전트 vs 스킬 역할
 
-| 역할 | 파일 | 유형 | 설명 |
-|------|------|------|------|
-| Stock Hunter | `agents/stock-hunter.md` | Agent | 시장 트렌드 분석, 오늘 주목할 종목 3~5개 발굴 |
-| Report Orchestrator | `agents/report-orchestrator.md` | Agent | 1개 종목의 전체 콘텐츠 제작 총괄 (병렬 실행) |
-| Content Reviewer | `agents/content-reviewer.md` | Agent | 팩트 체크, SEO 검수, 발행 순서 전략 |
-| Stock Analyst | `skills/stock-analyst/` | Skill | 리포트 수집·분석·핵심 3가지 요약 |
-| Blog Writer | `skills/blog-writer/` | Skill | SEO 최적화 블로그 글 작성 |
-| YouTube Script | `skills/youtube-script/` | Skill | 유튜브 스크립트 (후크 → 본론 → CTA) |
-| Image Generator | `skills/image-generator/` | Skill | 차트, 인포그래픽, 비교 이미지 생성 |
-| Thumbnail Creator | `skills/thumbnail-creator/` | Skill | 블로그·유튜브 썸네일 생성 |
-
----
-
-## 실행 방법
-
-```bash
-# 1. 종목 발굴
-"오늘 주목할 주식 종목 추천해줘"
-
-# 2. 특정 종목 직접 지정
-"삼성전자, SK하이닉스, NVIDIA 리포트 콘텐츠 만들어줘"
-
-# 3. 섹터 기반 발굴
-"반도체 섹터에서 이번 주 실적 발표 종목 분석해줘"
-```
+| 역할 | 파일 | 유형 |
+|------|------|------|
+| 전체 총괄 | `agents/report-producer.md` | Agent |
+| 리포트 파싱 | `skills/report-parser/` | Skill |
+| 쇼츠 스크립트 | `skills/shorts-writer/` | Skill |
+| 풀영상 스크립트 | `skills/youtube-script/` | Skill |
+| 차트/인포그래픽 | `skills/image-generator/` | Skill |
+| 썸네일 | `skills/thumbnail-creator/` | Skill |
 
 ---
 
 ## 핵심 주의사항
 
-1. **레퍼런스 폴더 채우기**: 각 스킬의 references/ 폴더에 예시 자료를 충분히 넣어야 품질이 높아짐
-2. **팩트 체크 필수**: 주식 정보는 오류가 있으면 안 되므로 Content Reviewer의 팩트 체크를 반드시 거침
-3. **면책 문구**: 모든 콘텐츠에 "본 콘텐츠는 투자 권유가 아닌 정보 제공 목적입니다" 문구 포함
-4. **stock-watchlist.md 누적 관리**: 이미 만든 종목+날짜는 기록하여 중복 콘텐츠 방지
+1. **리포트 내용만 사용**: 추측이나 외부 정보 추가 금지
+2. **쇼츠 시간 엄수**: 한국어 75~150단어 (30~60초)
+3. **면책 문구 필수**: 모든 스크립트 마지막에 포함
+4. **전문 용어 변환**: PER, YoY 등은 쉬운 말로 풀어서
