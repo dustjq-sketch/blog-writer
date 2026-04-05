@@ -56,7 +56,7 @@ def generate_images(slug: str):
         print(f"  이미지 {i}/{len(prompts)} 생성 중...")
         try:
             response = client.models.generate_content(
-                model="gemini-2.0-flash-preview-image-generation",
+                model="gemini-2.5-flash-image",
                 contents=prompt.strip(),
                 config=types.GenerateContentConfig(
                     response_modalities=["IMAGE", "TEXT"]
@@ -106,7 +106,7 @@ def generate_thumbnails(slug: str, video_type: str = "shorts"):
         print(f"  썸네일 생성 중: {name}")
         try:
             response = client.models.generate_content(
-                model="gemini-2.0-flash-preview-image-generation",
+                model="gemini-2.5-flash-image",
                 contents=prompt.strip(),
                 config=types.GenerateContentConfig(
                     response_modalities=["IMAGE", "TEXT"]
