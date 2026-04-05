@@ -89,8 +89,8 @@ def generate_images(slug: str):
 
     broker   = extract(r'\*\*증권사\*\*[^:]*:\s*\**([^(\n\*]+)', "증권사")
     opinion  = extract(r'\*\*투자의견\*\*:\s*(\w+)', "BUY")
-    cur_price = extract(r'현재가[^:]*:\s*\*\*([^\*\n]+)\*\*', "")
-    tgt_price = extract(r'목표주가[^:]*:\s*\*\*([^\*\n]+)\*\*', "")
+    cur_price = extract(r'현재가[^:\n]*:\s*\*\*([^\*\n]+)\*\*', "")
+    tgt_price = extract(r'- 목표주가:\s*\*\*([^\*\n]+)\*\*', "")
     upside   = extract(r'상승여력[^:]*:\s*\*\*([^\*\n]+)\*\*', "")
 
     # 핵심 이유 제목 (볼드 숫자 뒤 텍스트)
