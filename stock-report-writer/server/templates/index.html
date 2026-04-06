@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>리포트읽어드림 대시보드</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0D1B2A;
+      color: #fff;
+      font-family: -apple-system, 'Apple SD Gothic Neo', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
+    .sub { color: #8899aa; font-size: 14px; margin-bottom: 40px; }
+
+    /* 드래그앤드롭 영역 */
+    .dropzone {
+      width: 100%;
+      max-width: 560px;
+      border: 2px dashed #2a4a6a;
+      border-radius: 20px;
+      background: #162233;
+      padding: 50px 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .dropzone.drag-over { border-color: #dc2626; background: #1e2e40; }
+    .dropzone .icon { font-size: 52px; margin-bottom: 16px; }
+    .dropzone .hint { color: #8899aa; font-size: 14px; margin-top: 10px; }
+
+    input[type="file"] { display: none; }
+
+    .btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 32px;
+      background: #dc2626;
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #b91c1c; }
+    .btn:disabled { background: #444; cursor: not-allowed; }
+
+    /* 진행 상태 */
+    .status-box {
+      display: none;
+      width: 100%;
+      max-width: 560px;
+      margin-top: 30px;
+      background: #162233;
+      border-radius: 16px;
+      padding: 28px;
+    }
+    .status-box.show { display: block; }
+
+    .steps {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .steps::before {
+      content: '';
+      position: absolute;
+      top: 18px;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: #2a4a6a;
+    }
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #556677;
+      position: relative;
+      z-index: 1;
+    }
+    .step .dot {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #1e3050;
+      border: 2px solid #2a4a6a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .step.active .dot { border-color: #dc2626; background: #2a1010; }
+    .step.done .dot { border-color: #16a34a; background: #0a2010; }
+    .step.active { color: #fff; }
+    .step.done { color: #4ade80; }
+
+    .message {
+      text-align: center;
+      font-size: 16px;
+      color: #ccd6e0;
+      margin-bottom: 16px;
+      min-height: 24px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #1e3050;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #dc2626;
+      border-radius: 3px;
+      transition: width 0.5s ease;
+      width: 0%;
+    }
+
+    .open-btn {
+      display: none;
+      margin-top: 20px;
+      width: 100%;
+      padding: 14px;
+      background: #16a34a;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .open-btn:hover { background: #15803d; }
+    .open-btn.show { display: block; }
+
+    .error-msg {
+      margin-top: 12px;
+      color: #f87171;
+      font-size: 13px;
+      background: #2a1010;
+      border-radius: 8px;
+      padding: 12px;
+      display: none;
+    }
+    .error-msg.show { display: block; }
+
+    .reset-btn {
+      display: none;
+      margin-top: 12px;
+      background: none;
+      border: 1px solid #2a4a6a;
+      color: #8899aa;
+      padding: 8px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .reset-btn:hover { border-color: #fff; color: #fff; }
+    .reset-btn.show { display: inline-block; }
+  </style>
+</head>
+<body>
+
+  <h1>📊 리포트읽어드림</h1>
+  <p class="sub">증권사 리포트 이미지를 올리면 자동으로 영상을 만들어드려요</p>
+
+  <!-- 업로드 영역 -->
+  <div class="dropzone" id="dropzone">
+    <div class="icon">📄</div>
+    <div style="font-size:18px; font-weight:600;">리포트 이미지를 여기에 끌어다 놓으세요</div>
+    <div class="hint">PNG, JPG, PDF 파일 지원 · 클릭해서 파일 선택도 가능해요</div>
+    <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.pdf">
+    <button class="btn" onclick="document.getElementById('fileInput').click()">파일 선택</button>
+  </div>
+
+  <!-- 진행 상태 박스 -->
+  <div class="status-box" id="statusBox">
+    <div class="steps">
+      <div class="step" id="step1">
+        <div class="dot">📊</div>
+        <span>리포트 분석</span>
+      </div>
+      <div class="step" id="step2">
+        <div class="dot">📝</div>
+        <span>콘텐츠 생성</span>
+      </div>
+      <div class="step" id="step3">
+        <div class="dot">🎬</div>
+        <span>영상 제작</span>
+      </div>
+      <div class="step" id="step4">
+        <div class="dot">✅</div>
+        <span>완료</span>
+      </div>
+    </div>
+
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+    <br>
+    <div class="message" id="statusMsg">처리 중...</div>
+
+    <button class="open-btn" id="openBtn">📁 완료된 폴더 열기</button>
+    <div class="error-msg" id="errorMsg"></div>
+    <button class="reset-btn" id="resetBtn" onclick="reset()">↩ 새 리포트 처리하기</button>
+  </div>
+
+<script>
+  let jobId = null;
+  let pollTimer = null;
+  let currentSlug = null;
+
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const statusBox = document.getElementById('statusBox');
+  const statusMsg = document.getElementById('statusMsg');
+  const progressFill = document.getElementById('progressFill');
+  const openBtn = document.getElementById('openBtn');
+  const errorMsg = document.getElementById('errorMsg');
+  const resetBtn = document.getElementById('resetBtn');
+
+  // 드래그앤드롭
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) uploadFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', () => { if (fileInput.files[0]) uploadFile(fileInput.files[0]); });
+
+  function setStep(n) {
+    [1,2,3,4].forEach(i => {
+      const el = document.getElementById('step' + i);
+      el.classList.remove('active', 'done');
+      if (i < n) el.classList.add('done');
+      if (i === n) el.classList.add('active');
+    });
+    progressFill.style.width = Math.min((n-1) / 3 * 100, 100) + '%';
+  }
+
+  function uploadFile(file) {
+    dropzone.style.display = 'none';
+    statusBox.classList.add('show');
+    openBtn.classList.remove('show');
+    errorMsg.classList.remove('show');
+    resetBtn.classList.remove('show');
+    setStep(1);
+    statusMsg.textContent = '📤 업로드 중...';
+
+    const fd = new FormData();
+    fd.append('file', file);
+
+    fetch('/upload', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) throw new Error(data.error);
+        jobId = data.job_id;
+        pollStatus();
+      })
+      .catch(e => showError(e.message));
+  }
+
+  function pollStatus() {
+    pollTimer = setInterval(async () => {
+      const r = await fetch('/status/' + jobId);
+      const data = await r.json();
+
+      statusMsg.textContent = data.message || '처리 중...';
+      setStep(data.step || 1);
+
+      if (data.status === 'complete') {
+        clearInterval(pollTimer);
+        currentSlug = data.slug;
+        progressFill.style.width = '100%';
+        setStep(4);
+        openBtn.classList.add('show');
+        resetBtn.classList.add('show');
+        openBtn.onclick = () => fetch('/open/' + currentSlug);
+      } else if (data.status === 'error') {
+        clearInterval(pollTimer);
+        showError(data.message);
+      }
+    }, 2000);
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add('show');
+    resetBtn.classList.add('show');
+  }
+
+  function reset() {
+    clearInterval(pollTimer);
+    jobId = null;
+    currentSlug = null;
+    dropzone.style.display = '';
+    statusBox.classList.remove('show');
+    openBtn.classList.remove('show');
+    errorMsg.classList.remove('show');
+    resetBtn.classList.remove('show');
+    fileInput.value = '';
+    progressFill.style.width = '0%';
+    [1,2,3,4].forEach(i => {
+      const el = document.getElementById('step' + i);
+      el.classList.remove('active', 'done');
+    });
+  }
+</script>
+</body>
+</html>
