@@ -84,14 +84,12 @@ def make_slug(data: dict) -> str:
         "SK하이닉스": "skhynix", "삼성전자": "sec", "LG에너지솔루션": "lges",
     }
     name = data.get("stock_name") or ""
-    code = data.get("stock_code") or "0"
     raw_date = data.get("date") or ""
-    # N/A, 없음, 미상 등 무효값 처리
     if raw_date.strip() in ("N/A", "n/a", "없음", "미상", "unknown", "-"):
         raw_date = ""
-    date = re.sub(r"[^\d]", "", raw_date)  # 숫자만 남기기 (슬래시 등 제거)
-    en = name_map.get(name, f"s{code}")
-    return f"{en}-{date}" if date else en
+    date = re.sub(r"[^\d]", "", raw_date)
+    stock = name if name else f"종목{data.get('stock_code','')}"
+    return f"{stock}-{date}" if date else stock
 
 
 # ─────────────────────────────────────────
@@ -292,9 +290,9 @@ def generate_term_content(term: str) -> dict:
 
 def make_term_slug(data: dict) -> str:
     from datetime import date as _d
-    english = re.sub(r"[^\w]", "", (data.get("english") or data.get("term") or "term")).lower()[:20]
+    term = data.get("term") or "용어"
     today = _d.today().strftime("%Y%m%d")
-    return f"term-{english}-{today}"
+    return f"{term}-{today}"
 
 
 def create_term_files(slug: str, d: dict):
@@ -480,13 +478,12 @@ def make_industry_slug(data: dict) -> str:
         "음식료": "food", "에너지": "energy", "조선": "ship",
         "항공": "airline", "물류": "logistics", "부동산": "realty",
     }
-    industry = data.get("industry_name") or "industry"
+    industry = data.get("industry_name") or "산업"
     raw_date = data.get("date") or ""
     if raw_date.strip() in ("N/A", "n/a", "없음", "미상", "unknown", "-"):
         raw_date = ""
     date = re.sub(r"[^\d]", "", raw_date)
-    en = industry_map.get(industry, re.sub(r"[^\w]", "", industry).lower()[:10] or "industry")
-    return f"{en}-industry-{date}" if date else f"{en}-industry"
+    return f"{industry}-산업-{date}" if date else f"{industry}-산업"
 
 
 def create_industry_files(slug: str, d: dict):
