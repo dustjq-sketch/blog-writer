@@ -288,7 +288,7 @@ def generate_thumbnails(slug: str, video_type: str = "shorts"):
 # Step 3: 음성 생성 (Google Cloud TTS)
 # ─────────────────────────────────────────
 
-def extract_narration(script_md: str) -> str:
+def extract_narration(script_md: str, is_term: bool = False) -> str:
     """스크립트에서 나레이션 텍스트만 추출"""
     lines = script_md.split("\n")
     narration = []
@@ -311,11 +311,14 @@ def extract_narration(script_md: str) -> str:
             narration.append(line)
 
     text = " ".join(narration)
-    text += " 본 영상은 리포트를 읽어드리는 것이며 매수, 매도 추천이 아니며 투자에 대한 책임은 본인에게 있습니다."
+    if is_term:
+        text += " 본 영상은 정보 제공 목적이며 투자 권유가 아닙니다."
+    else:
+        text += " 본 영상은 리포트를 읽어드리는 것이며 매수, 매도 추천이 아니며 투자에 대한 책임은 본인에게 있습니다."
     return text
 
 
-def generate_audio(slug: str, video_type: str = "shorts"):
+def generate_audio(slug: str, video_type: str = "shorts", is_term: bool = False):
     """Google Cloud TTS로 한국어 음성 생성"""
     from google.cloud import texttospeech
 
@@ -324,7 +327,7 @@ def generate_audio(slug: str, video_type: str = "shorts"):
         print(f"⚠️  스크립트 없음: {script_file}")
         return None
 
-    narration = extract_narration(script_file.read_text(encoding="utf-8"))
+    narration = extract_narration(script_file.read_text(encoding="utf-8"), is_term=is_term)
     print(f"  나레이션 길이: {len(narration)}자")
 
     client = texttospeech.TextToSpeechClient()
@@ -336,7 +339,7 @@ def generate_audio(slug: str, video_type: str = "shorts"):
         ),
         audio_config=texttospeech.AudioConfig(
             audio_encoding=texttospeech.AudioEncoding.MP3,
-            speaking_rate=1.1,
+            speaking_rate=0.95 if is_term else 1.1,
         ),
     )
 
@@ -391,7 +394,7 @@ def extract_section_weights(script_md: str, n_images: int) -> list:
     return [g / total for g in groups]
 
 
-def generate_video(slug: str, video_type: str = "shorts"):
+def generate_video(slug: str, video_type: str = "shorts", is_term: bool = False):
     """이미지 + 음성 → mp4 조합"""
     from moviepy.editor import (
         ImageClip, AudioFileClip, concatenate_videoclips,
@@ -418,7 +421,7 @@ def generate_video(slug: str, video_type: str = "shorts"):
 
     audio = AudioFileClip(str(audio_path))
     n = len(image_files)
-    FADE = 0.6  # 크로스페이드 길이(초)
+    FADE = 1.2 if is_term else 0.6  # 크로스페이드 길이(초)
 
     DISC_DUR = 4  # 면책 카드 길이(초)
     # 크로스페이드 오버랩을 고려한 총 이미지 시간
@@ -464,18 +467,25 @@ def generate_video(slug: str, video_type: str = "shorts"):
     # 면책 카드 배경
     _rounded_rect(dd, (60, H_d//2 - 130, W_d - 60, H_d//2 + 130), 20, CARD_C)
 
-    disc_lines = [
-        "본 영상은 리포트를 읽어드리는 것이며",
-        "매수, 매도 추천이 아니며",
-        "투자에 대한 책임은 본인에게 있습니다",
-    ]
+    if is_term:
+        disc_lines = [
+            "본 영상은 정보 제공 목적이며",
+            "투자 권유가 아닙니다",
+        ]
+    else:
+        disc_lines = [
+            "본 영상은 리포트를 읽어드리는 것이며",
+            "매수, 매도 추천이 아니며",
+            "투자에 대한 책임은 본인에게 있습니다",
+        ]
     for j, line in enumerate(disc_lines):
         dd.text((W_d//2, H_d//2 - 60 + j * 70), line,
                 font=_load_font(44), fill=(255, 255, 255), anchor="mm")
 
     # 구독 CTA
     dd.line([(80, H_d//2 + 160), (W_d - 80, H_d//2 + 160)], fill=(40, 60, 80), width=2)
-    dd.text((W_d//2, H_d//2 + 230), "구독하고 다음 리포트도 받아가세요!",
+    cta_text = "구독하고 다음 용어도 배워가세요!" if is_term else "구독하고 다음 리포트도 받아가세요!"
+    dd.text((W_d//2, H_d//2 + 230), cta_text,
             font=_load_font(42), fill=(220, 38, 38), anchor="mm")
 
     disc_clip = ImageClip(np.array(disc_img)).set_duration(DISC_DUR).crossfadein(FADE)
@@ -698,10 +708,10 @@ def produce_term(slug: str):
     generate_term_images(slug)
 
     print("\n[2/3] 음성 생성 중...")
-    generate_audio(slug, "shorts")
+    generate_audio(slug, "shorts", is_term=True)
 
     print("\n[3/3] 영상 조합 중...")
-    generate_video(slug, "shorts")
+    generate_video(slug, "shorts", is_term=True)
 
     print(f"\n🎉 완료! → Outputs/{slug}/shorts-video.mp4")
 
