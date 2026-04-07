@@ -360,6 +360,7 @@ def create_term_files(slug: str, d: dict):
     mi = money_impact + [""] * 3
     ks = key_summary + [""] * 3
 
+    # 4 섹션을 균등하게 (각 카드 약 12~15초, 총 50초)
     (out / "shorts-script.md").write_text(f"""# {term} 쇼츠 스크립트
 **예상 시간**: 약 50초
 
@@ -368,33 +369,24 @@ def create_term_files(slug: str, d: dict):
 ## 스크립트
 
 [후크]
-"'{term}' 아시나요?
+"오늘의 경제 용어는 '{term}'이에요.
 {one_line}.
-30초 만에 설명해 드릴게요."
+알면 돈이 보여요, 지금 바로 알려드릴게요."
 
-[본론]
-"왜 알아야 할까요?
-{why_know}
+[설명]
+"{what_means[:80]}.
+쉽게 비유하면요, {analogy[:60]}."
 
-무슨 뜻이냐면요.
-{what_means}
-
-쉽게 비유하면요.
-{analogy}"
-
-[결론]
-"내 돈에 미치는 영향은요?
+[영향]
+"내 돈에는 이렇게 영향을 줘요.
 {safe(mi[0])}.
-{safe(mi[1])}.
+{safe(mi[1])}."
 
-핵심만 정리하면요.
+[정리]
+"핵심만 정리하면요.
 첫째, {safe(ks[0])}.
 둘째, {safe(ks[1])}.
-셋째, {safe(ks[2])}."
-
-[CTA]
-"{catchphrase}
-구독하고 다음 경제 용어도 알아가세요!"
+{catchphrase}. 구독하고 다음 용어도 알아가세요!"
 
 ---
 *본 영상은 정보 제공 목적이며 투자 권유가 아닙니다.*
