@@ -401,8 +401,9 @@
     </div>
     <div class="selected-files" id="selectedFiles"></div>
     <button class="make-video-btn" id="makeVideoBtn" onclick="makeVideo()" disabled>
-      🎬 영상 제작 시작 (<span id="imgUploadCount">0</span>장 선택됨)
+      🎬 영상 제작 시작
     </button>
+    <div id="imgUploadCount" style="display:none"></div>
   </div>
 
 <script>
@@ -648,7 +649,9 @@
     clearBtn.onclick = clearFiles;
     box.appendChild(clearBtn);
 
-    countEl.textContent = accumulatedFiles.length;
+    const countEl = document.getElementById('imgUploadCount');
+    if (countEl) countEl.textContent = accumulatedFiles.length;
+    btn.textContent = `🎬 영상 제작 시작 (${accumulatedFiles.length}장)`;
     btn.disabled = false;
   }
 
@@ -671,7 +674,7 @@
         if (data.error) throw new Error(data.error);
         jobId = data.job_id;
         btn.textContent = '🎬 영상 제작 중...';
-        statusMsg.textContent = '🎙️ 음성 생성 중...';
+        statusMsg.textContent = '🎙️ 음성+영상 생성 중... (약 1-2분)';
         setStep(3);
         pollStatus();
       })
@@ -698,11 +701,12 @@
     resetBtn.classList.remove('show');
     accumulatedFiles = [];
     fileInput.value = '';
-    document.getElementById('imagesInput').value = '';
-    document.getElementById('selectedFiles').innerHTML = '';
-    document.getElementById('imgUploadCount').textContent = '0';
-    document.getElementById('makeVideoBtn').disabled = true;
-    document.getElementById('makeVideoBtn').textContent = '🎬 영상 제작 시작 (0장 선택됨)';
+    const imagesInput = document.getElementById('imagesInput');
+    if (imagesInput) imagesInput.value = '';
+    const selFiles = document.getElementById('selectedFiles');
+    if (selFiles) selFiles.innerHTML = '';
+    const makeBtn = document.getElementById('makeVideoBtn');
+    if (makeBtn) { makeBtn.disabled = true; makeBtn.textContent = '🎬 영상 제작 시작'; }
     document.getElementById('promptsList').innerHTML = '';
     progressFill.style.width = '0%';
     [1,2,3,4].forEach(i => document.getElementById('step' + i).classList.remove('active','done'));
