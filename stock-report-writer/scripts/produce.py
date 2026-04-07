@@ -489,6 +489,222 @@ def generate_video(slug: str, video_type: str = "shorts"):
 
 
 # ─────────────────────────────────────────
+# Step 1c: 경제 용어 카드 생성 (1080x1920)
+# ─────────────────────────────────────────
+
+def generate_term_images(slug: str) -> list:
+    """경제 용어 설명 카드 4장 생성"""
+    from PIL import Image, ImageDraw
+
+    summary_file = OUTPUTS_DIR / slug / "summary.md"
+    if not summary_file.exists():
+        print(f"⚠️  summary.md 없음: {summary_file}")
+        return []
+
+    content = summary_file.read_text(encoding="utf-8")
+
+    def extract(pattern, default=""):
+        m = re.search(pattern, content, re.DOTALL)
+        return m.group(1).strip() if m else default
+
+    term       = extract(r'^# (.+?) 경제', content[:200].split('\n')[0].replace('# ', '').split(' 경제')[0]) or extract(r'^# (.+)', '')
+    english    = extract(r'\*\*영어\*\*:\s*([^\n]+)', "")
+    category   = extract(r'\*\*카테고리\*\*:\s*([^\n]+)', "")
+    one_line   = extract(r'\*\*한 줄 정의\*\*:\s*([^\n]+)', "")
+    definition = _parse_section(content, "정의")
+
+    # 한 줄 정의 - title에서 직접 추출
+    title_line = content.split('\n')[0].replace('# ', '')
+    term = title_line.split(' 경제')[0].split(' -')[0].strip()
+
+    how_works = _parse_bullets(_parse_section(content, "작동 원리"))
+    key_points = _parse_bullets(_parse_section(content, "핵심 포인트"))
+
+    # 실생활 영향 파싱
+    real_life_raw = _parse_section(content, "실생활 영향")
+    real_life = []
+    for line in real_life_raw.split('\n'):
+        line = line.strip().lstrip('- ').strip()
+        if '→' in line or ':' in line:
+            real_life.append(line)
+        elif line and not line.startswith('#'):
+            real_life.append(line)
+    life_summary = extract(r'\*\*결론\*\*:\s*([^\n]+)', "")
+
+    images_dir = OUTPUTS_DIR / slug / "images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+
+    BG      = (13,  27,  42)
+    WHITE   = (255, 255, 255)
+    GRAY    = (160, 170, 185)
+    CARD_BG = (22,  42,  62)
+    BLUE    = (59,  130, 246)
+    GREEN   = (34,  197,  94)
+    ORANGE  = (249, 115,  22)
+    YELLOW  = (250, 204,  21)
+
+    W, H = 1080, 1920
+    image_paths = []
+
+    def save_card(img, idx):
+        out = images_dir / f"{slug}-img-{idx:02d}.png"
+        img.save(str(out))
+        image_paths.append(out)
+        print(f"  ✅ 카드 {idx}: {out.name}")
+
+    def card_footer(d, text="리포트읽어드림"):
+        d.line([(60, H - 90), (W - 60, H - 90)], fill=(40, 60, 80), width=2)
+        d.text((W // 2, H - 50), text, font=_load_font(34), fill=GRAY, anchor="mm")
+
+    # ══ 카드 1: 용어 정의 ══
+    img = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(img)
+
+    # 채널명
+    d.text((W // 2, 100), "리포트읽어드림", font=_load_font(38), fill=GRAY, anchor="mm")
+    d.text((W // 2, 155), "경제 용어 한방 정리", font=_load_font(36), fill=(80, 110, 140), anchor="mm")
+
+    # 카테고리 배지
+    if category:
+        cw = len(category) * 24 + 60
+        cx = W // 2 - cw // 2
+        _rounded_rect(d, (cx, 210, cx + cw, 270), 30, BLUE)
+        d.text((W // 2, 240), category, font=_load_font(36, bold=True), fill=WHITE, anchor="mm")
+
+    # 용어명
+    d.text((W // 2, 420), term, font=_load_font(110, bold=True), fill=WHITE, anchor="mm")
+    if english:
+        d.text((W // 2, 545), f"({english})", font=_load_font(46), fill=GRAY, anchor="mm")
+
+    d.line([(60, 615), (W - 60, 615)], fill=(40, 60, 80), width=2)
+
+    # 한 줄 정의 박스
+    if one_line:
+        _rounded_rect(d, (60, 640, W - 60, 750), 20, CARD_BG)
+        d.text((W // 2, 695), one_line, font=_load_font(42, bold=True), fill=YELLOW, anchor="mm")
+
+    # 설명
+    def_lines = _wrap(definition.replace('\n', ' '), 22)
+    for i, ln in enumerate(def_lines[:5]):
+        d.text((W // 2, 810 + i * 72), ln, font=_load_font(42), fill=WHITE, anchor="mm")
+
+    card_footer(d)
+    save_card(img, 1)
+
+    # ══ 카드 2: 작동 원리 ══
+    img = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(img)
+
+    d.text((W // 2, 110), "리포트읽어드림", font=_load_font(38), fill=GRAY, anchor="mm")
+    d.text((W // 2, 240), term, font=_load_font(74, bold=True), fill=WHITE, anchor="mm")
+    d.text((W // 2, 340), "어떻게 작동할까?", font=_load_font(54), fill=ORANGE, anchor="mm")
+    d.line([(60, 400), (W - 60, 400)], fill=(40, 60, 80), width=2)
+
+    step_labels = ["①", "②", "③"]
+    step_y = 460
+    for i, step in enumerate(how_works[:3]):
+        rh = 220
+        _rounded_rect(d, (60, step_y, W - 60, step_y + rh), 20, CARD_BG)
+        d.text((150, step_y + rh // 2), step_labels[i],
+               font=_load_font(72, bold=True), fill=ORANGE, anchor="mm")
+        d.line([(200, step_y + 40), (200, step_y + rh - 40)], fill=(40, 60, 80), width=2)
+        for j, ln in enumerate(_wrap(step, 16)[:3]):
+            d.text((230, step_y + 70 + j * 60), ln,
+                   font=_load_font(42, bold=True if j == 0 else False),
+                   fill=(WHITE if j == 0 else GRAY), anchor="lm")
+        step_y += rh + 24
+
+    card_footer(d)
+    save_card(img, 2)
+
+    # ══ 카드 3: 핵심 포인트 ══
+    img = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(img)
+
+    d.text((W // 2, 110), "리포트읽어드림", font=_load_font(38), fill=GRAY, anchor="mm")
+    d.text((W // 2, 240), term, font=_load_font(74, bold=True), fill=WHITE, anchor="mm")
+    d.text((W // 2, 340), "핵심 포인트", font=_load_font(60), fill=GREEN, anchor="mm")
+    d.line([(60, 400), (W - 60, 400)], fill=(40, 60, 80), width=2)
+
+    pt_y = 460
+    for i, pt in enumerate(key_points[:3]):
+        rh = 220
+        _rounded_rect(d, (60, pt_y, W - 60, pt_y + rh), 20, CARD_BG)
+        d.text((140, pt_y + rh // 2), "✦", font=_load_font(60, bold=True), fill=GREEN, anchor="mm")
+        d.line([(195, pt_y + 40), (195, pt_y + rh - 40)], fill=(40, 60, 80), width=2)
+        for j, ln in enumerate(_wrap(pt, 16)[:3]):
+            d.text((225, pt_y + 70 + j * 60), ln,
+                   font=_load_font(42, bold=True if j == 0 else False),
+                   fill=(WHITE if j == 0 else GRAY), anchor="lm")
+        pt_y += rh + 24
+
+    card_footer(d)
+    save_card(img, 3)
+
+    # ══ 카드 4: 나의 실생활 영향 ══
+    img = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(img)
+
+    d.text((W // 2, 100), "리포트읽어드림", font=_load_font(38), fill=GRAY, anchor="mm")
+    d.text((W // 2, 215), "💰 나의 실생활 영향", font=_load_font(60, bold=True), fill=YELLOW, anchor="mm")
+    d.text((W // 2, 305), term, font=_load_font(52), fill=GRAY, anchor="mm")
+    d.line([(60, 360), (W - 60, 360)], fill=(40, 60, 80), width=2)
+
+    rl_y = 400
+    for i, item in enumerate(real_life[:3]):
+        rh = 210
+        _rounded_rect(d, (60, rl_y, W - 60, rl_y + rh), 20, CARD_BG)
+        # 상황과 영향 분리
+        if '→' in item:
+            case, impact = item.split('→', 1)
+        elif ':' in item:
+            case, impact = item.split(':', 1)
+        else:
+            case, impact = item, ""
+        d.text((W // 2, rl_y + 60), case.strip(),
+               font=_load_font(40, bold=True), fill=WHITE, anchor="mm")
+        if impact.strip():
+            d.text((W // 2, rl_y + 130), impact.strip(),
+                   font=_load_font(38), fill=YELLOW, anchor="mm")
+        rl_y += rh + 20
+
+    # 결론
+    if life_summary:
+        _rounded_rect(d, (60, rl_y + 10, W - 60, rl_y + 110), 20, (30, 60, 30))
+        d.text((W // 2, rl_y + 60), life_summary,
+               font=_load_font(42, bold=True), fill=GREEN, anchor="mm")
+
+    card_footer(d)
+    save_card(img, 4)
+
+    return image_paths
+
+
+def produce_term(slug: str):
+    """경제 용어 쇼츠 파이프라인"""
+    out_dir = OUTPUTS_DIR / slug
+    if not out_dir.exists():
+        print(f"❌ 슬러그 없음: {slug}")
+        sys.exit(1)
+
+    print(f"\n{'='*50}")
+    print(f"💡  리포트읽어드림 경제 용어 쇼츠")
+    print(f"    슬러그: {slug}")
+    print(f"{'='*50}")
+
+    print("\n[1/3] 카드 생성 중...")
+    generate_term_images(slug)
+
+    print("\n[2/3] 음성 생성 중...")
+    generate_audio(slug, "shorts")
+
+    print("\n[3/3] 영상 조합 중...")
+    generate_video(slug, "shorts")
+
+    print(f"\n🎉 완료! → Outputs/{slug}/shorts-video.mp4")
+
+
+# ─────────────────────────────────────────
 # Step 1b: 산업 리포트 슬라이드 생성 (1920x1080)
 # ─────────────────────────────────────────
 
@@ -809,5 +1025,7 @@ if __name__ == "__main__":
     vtype = sys.argv[2] if len(sys.argv) > 2 else "shorts"
     if vtype == "industry":
         produce_industry(sys.argv[1])
+    elif vtype == "term":
+        produce_term(sys.argv[1])
     else:
         produce(slug=sys.argv[1], video_type=vtype)

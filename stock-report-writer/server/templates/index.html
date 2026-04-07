@@ -18,12 +18,35 @@
     }
 
     h1 { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
-    .sub { color: #8899aa; font-size: 14px; margin-bottom: 40px; }
+    .sub { color: #8899aa; font-size: 14px; margin-bottom: 28px; }
+
+    /* 모드 탭 */
+    .mode-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+      background: #0d1f30;
+      border-radius: 50px;
+      padding: 6px;
+    }
+    .mode-tab {
+      padding: 10px 28px;
+      border-radius: 50px;
+      border: none;
+      background: transparent;
+      color: #8899aa;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mode-tab.active { background: #dc2626; color: #fff; }
+
+    /* 공통 패널 */
+    .panel { width: 100%; max-width: 560px; }
 
     /* 드래그앤드롭 영역 */
     .dropzone {
-      width: 100%;
-      max-width: 560px;
       border: 2px dashed #2a4a6a;
       border-radius: 20px;
       background: #162233;
@@ -34,14 +57,54 @@
     }
     .dropzone.drag-over { border-color: #dc2626; background: #1e2e40; }
     .dropzone .icon { font-size: 52px; margin-bottom: 16px; }
-    .dropzone .hint { color: #8899aa; font-size: 14px; margin-top: 10px; }
-
+    .dropzone .hint { color: #8899aa; font-size: 13px; margin-top: 10px; line-height: 1.8; }
     input[type="file"] { display: none; }
+
+    /* 경제 용어 입력 */
+    .term-zone {
+      background: #162233;
+      border-radius: 20px;
+      padding: 36px 30px;
+    }
+    .term-zone h3 { font-size: 18px; margin-bottom: 8px; }
+    .term-zone p { color: #8899aa; font-size: 13px; margin-bottom: 20px; }
+    .term-input-wrap {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+    .term-input {
+      flex: 1;
+      padding: 14px 18px;
+      background: #0d1f30;
+      border: 1px solid #2a4a6a;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 17px;
+    }
+    .term-input::placeholder { color: #556677; }
+    .term-input:focus { outline: none; border-color: #4a90d9; }
+
+    .term-tags { margin-bottom: 8px; }
+    .tag-category { margin-bottom: 14px; }
+    .tag-label { font-size: 12px; color: #556677; margin-bottom: 6px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag {
+      padding: 6px 14px;
+      background: #1e3050;
+      border: 1px solid #2a4a6a;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #aabbcc;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tag:hover { background: #2a4a6a; color: #fff; border-color: #4a90d9; }
 
     .btn {
       display: inline-block;
-      margin-top: 20px;
-      padding: 12px 32px;
+      margin-top: 10px;
+      padding: 14px 36px;
       background: #dc2626;
       color: #fff;
       border: none;
@@ -49,10 +112,25 @@
       font-size: 16px;
       font-weight: 600;
       cursor: pointer;
+      width: 100%;
       transition: background 0.2s;
     }
     .btn:hover { background: #b91c1c; }
     .btn:disabled { background: #444; cursor: not-allowed; }
+    .btn-outline {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 12px 32px;
+      background: transparent;
+      color: #fff;
+      border: 2px solid #2a4a6a;
+      border-radius: 50px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .btn-outline:hover { border-color: #dc2626; }
 
     /* 진행 상태 */
     .status-box {
@@ -92,14 +170,11 @@
       z-index: 1;
     }
     .step .dot {
-      width: 36px;
-      height: 36px;
+      width: 36px; height: 36px;
       border-radius: 50%;
       background: #1e3050;
       border: 2px solid #2a4a6a;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       font-size: 16px;
     }
     .step.active .dot { border-color: #dc2626; background: #2a1010; }
@@ -107,67 +182,22 @@
     .step.active { color: #fff; }
     .step.done { color: #4ade80; }
 
-    .message {
-      text-align: center;
-      font-size: 16px;
-      color: #ccd6e0;
-      margin-bottom: 16px;
-      min-height: 24px;
-    }
-
-    .progress-bar {
-      width: 100%;
-      height: 6px;
-      background: #1e3050;
-      border-radius: 3px;
-      overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%;
-      background: #dc2626;
-      border-radius: 3px;
-      transition: width 0.5s ease;
-      width: 0%;
-    }
+    .message { text-align: center; font-size: 15px; color: #ccd6e0; margin-bottom: 16px; min-height: 24px; white-space: pre-line; }
+    .progress-bar { width: 100%; height: 6px; background: #1e3050; border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #dc2626; border-radius: 3px; transition: width 0.5s ease; width: 0%; }
 
     .open-btn {
-      display: none;
-      margin-top: 20px;
-      width: 100%;
-      padding: 14px;
-      background: #16a34a;
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
+      display: none; margin-top: 20px; width: 100%;
+      padding: 14px; background: #16a34a; color: #fff;
+      border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer;
     }
     .open-btn:hover { background: #15803d; }
     .open-btn.show { display: block; }
 
-    .error-msg {
-      margin-top: 12px;
-      color: #f87171;
-      font-size: 13px;
-      background: #2a1010;
-      border-radius: 8px;
-      padding: 12px;
-      display: none;
-    }
+    .error-msg { margin-top: 12px; color: #f87171; font-size: 12px; background: #2a1010; border-radius: 8px; padding: 12px; display: none; white-space: pre-wrap; }
     .error-msg.show { display: block; }
 
-    .reset-btn {
-      display: none;
-      margin-top: 12px;
-      background: none;
-      border: 1px solid #2a4a6a;
-      color: #8899aa;
-      padding: 8px 24px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-    }
+    .reset-btn { display: none; margin-top: 12px; background: none; border: 1px solid #2a4a6a; color: #8899aa; padding: 8px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; }
     .reset-btn:hover { border-color: #fff; color: #fff; }
     .reset-btn.show { display: inline-block; }
   </style>
@@ -175,64 +205,138 @@
 <body>
 
   <h1>📊 리포트읽어드림</h1>
-  <p class="sub">증권사 리포트를 올리면 자동으로 영상을 만들어드려요</p>
+  <p class="sub">증권사 리포트 & 경제 용어를 영상으로 자동 제작</p>
 
-  <!-- 업로드 영역 -->
-  <div class="dropzone" id="dropzone">
-    <div class="icon">📄</div>
-    <div style="font-size:18px; font-weight:600;">리포트를 여기에 끌어다 놓으세요</div>
-    <div class="hint" style="line-height:1.8">
-      🖼 PNG · JPG → <strong style="color:#fff">종목 리포트</strong> · 쇼츠 (45초)<br>
-      📄 PDF → <strong style="color:#fff">산업 리포트</strong> · 롱폼 (5~7분)
-    </div>
-    <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.pdf">
-    <button class="btn" onclick="document.getElementById('fileInput').click()">파일 선택</button>
+  <!-- 모드 탭 -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" id="tabReport" onclick="setMode('report')">📊 리포트</button>
+    <button class="mode-tab" id="tabTerm" onclick="setMode('term')">💡 경제 용어</button>
   </div>
 
-  <!-- 진행 상태 박스 -->
-  <div class="status-box" id="statusBox">
-    <div class="steps">
-      <div class="step" id="step1">
-        <div class="dot">📊</div>
-        <span>리포트 분석</span>
+  <!-- 리포트 업로드 패널 -->
+  <div class="panel" id="panelReport">
+    <div class="dropzone" id="dropzone">
+      <div class="icon">📄</div>
+      <div style="font-size:18px; font-weight:600;">리포트를 여기에 끌어다 놓으세요</div>
+      <div class="hint">
+        🖼 PNG · JPG → <strong style="color:#fff">종목 리포트</strong> · 쇼츠 (45초)<br>
+        📄 PDF → <strong style="color:#fff">산업 리포트</strong> · 롱폼 (5~7분)
       </div>
-      <div class="step" id="step2">
-        <div class="dot">📝</div>
-        <span>콘텐츠 생성</span>
+      <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.pdf">
+      <button class="btn-outline" onclick="document.getElementById('fileInput').click()">파일 선택</button>
+    </div>
+  </div>
+
+  <!-- 경제 용어 패널 -->
+  <div class="panel" id="panelTerm" style="display:none">
+    <div class="term-zone">
+      <h3>💡 경제 용어 쇼츠</h3>
+      <p>용어를 입력하면 설명 카드 4장 + TTS 음성 + 영상을 자동으로 만들어드려요</p>
+
+      <div class="term-input-wrap">
+        <input type="text" class="term-input" id="termInput"
+               placeholder="예: 역모기지론, 기준금리, ETF..."
+               onkeydown="if(event.key==='Enter') startTerm()">
+        <button class="btn" style="width:auto;margin-top:0;padding:14px 24px" onclick="startTerm()">만들기</button>
       </div>
-      <div class="step" id="step3">
-        <div class="dot">🎬</div>
-        <span>영상 제작</span>
-      </div>
-      <div class="step" id="step4">
-        <div class="dot">✅</div>
-        <span>완료</span>
+
+      <div class="term-tags">
+        <div class="tag-category">
+          <div class="tag-label">💰 금리 / 통화</div>
+          <div class="tags">
+            <span class="tag" onclick="pickTerm(this)">기준금리</span>
+            <span class="tag" onclick="pickTerm(this)">양적완화</span>
+            <span class="tag" onclick="pickTerm(this)">테이퍼링</span>
+            <span class="tag" onclick="pickTerm(this)">스태그플레이션</span>
+            <span class="tag" onclick="pickTerm(this)">환율</span>
+          </div>
+        </div>
+        <div class="tag-category">
+          <div class="tag-label">📈 투자 / 주식</div>
+          <div class="tags">
+            <span class="tag" onclick="pickTerm(this)">ETF</span>
+            <span class="tag" onclick="pickTerm(this)">PER</span>
+            <span class="tag" onclick="pickTerm(this)">공매도</span>
+            <span class="tag" onclick="pickTerm(this)">레버리지</span>
+            <span class="tag" onclick="pickTerm(this)">배당수익률</span>
+            <span class="tag" onclick="pickTerm(this)">ELS</span>
+          </div>
+        </div>
+        <div class="tag-category">
+          <div class="tag-label">🏠 부동산</div>
+          <div class="tags">
+            <span class="tag" onclick="pickTerm(this)">역모기지론</span>
+            <span class="tag" onclick="pickTerm(this)">DSR</span>
+            <span class="tag" onclick="pickTerm(this)">LTV</span>
+            <span class="tag" onclick="pickTerm(this)">깡통전세</span>
+            <span class="tag" onclick="pickTerm(this)">전세자금대출</span>
+          </div>
+        </div>
+        <div class="tag-category">
+          <div class="tag-label">🌏 거시경제</div>
+          <div class="tags">
+            <span class="tag" onclick="pickTerm(this)">GDP</span>
+            <span class="tag" onclick="pickTerm(this)">CPI</span>
+            <span class="tag" onclick="pickTerm(this)">무역수지</span>
+            <span class="tag" onclick="pickTerm(this)">인플레이션</span>
+            <span class="tag" onclick="pickTerm(this)">디플레이션</span>
+          </div>
+        </div>
+        <div class="tag-category">
+          <div class="tag-label">🏦 금융 상품</div>
+          <div class="tags">
+            <span class="tag" onclick="pickTerm(this)">채권</span>
+            <span class="tag" onclick="pickTerm(this)">RP</span>
+            <span class="tag" onclick="pickTerm(this)">파생상품</span>
+            <span class="tag" onclick="pickTerm(this)">ISA계좌</span>
+            <span class="tag" onclick="pickTerm(this)">연금저축</span>
+          </div>
+        </div>
       </div>
     </div>
+  </div>
 
+  <!-- 진행 상태 박스 (공통) -->
+  <div class="status-box" id="statusBox">
+    <div class="steps">
+      <div class="step" id="step1"><div class="dot">📊</div><span id="step1label">분석</span></div>
+      <div class="step" id="step2"><div class="dot">📝</div><span>콘텐츠</span></div>
+      <div class="step" id="step3"><div class="dot">🎬</div><span>영상</span></div>
+      <div class="step" id="step4"><div class="dot">✅</div><span>완료</span></div>
+    </div>
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-
     <br>
     <div class="message" id="statusMsg">처리 중...</div>
-
     <button class="open-btn" id="openBtn">📁 완료된 폴더 열기</button>
     <div class="error-msg" id="errorMsg"></div>
-    <button class="reset-btn" id="resetBtn" onclick="reset()">↩ 새 리포트 처리하기</button>
+    <button class="reset-btn" id="resetBtn" onclick="reset()">↩ 새로 만들기</button>
   </div>
 
 <script>
-  let jobId = null;
-  let pollTimer = null;
-  let currentSlug = null;
+  let jobId = null, pollTimer = null, currentSlug = null, currentMode = 'report';
 
-  const dropzone = document.getElementById('dropzone');
-  const fileInput = document.getElementById('fileInput');
-  const statusBox = document.getElementById('statusBox');
-  const statusMsg = document.getElementById('statusMsg');
+  const dropzone   = document.getElementById('dropzone');
+  const fileInput  = document.getElementById('fileInput');
+  const statusBox  = document.getElementById('statusBox');
+  const statusMsg  = document.getElementById('statusMsg');
   const progressFill = document.getElementById('progressFill');
-  const openBtn = document.getElementById('openBtn');
-  const errorMsg = document.getElementById('errorMsg');
-  const resetBtn = document.getElementById('resetBtn');
+  const openBtn    = document.getElementById('openBtn');
+  const errorMsg   = document.getElementById('errorMsg');
+  const resetBtn   = document.getElementById('resetBtn');
+
+  function setMode(mode) {
+    currentMode = mode;
+    document.getElementById('panelReport').style.display = mode === 'report' ? '' : 'none';
+    document.getElementById('panelTerm').style.display   = mode === 'term'   ? '' : 'none';
+    document.getElementById('tabReport').classList.toggle('active', mode === 'report');
+    document.getElementById('tabTerm').classList.toggle('active', mode === 'term');
+    document.getElementById('step1label').textContent = mode === 'term' ? '용어 생성' : '분석';
+  }
+
+  function pickTerm(el) {
+    document.getElementById('termInput').value = el.textContent;
+    document.getElementById('termInput').focus();
+  }
 
   // 드래그앤드롭
   dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
@@ -254,25 +358,39 @@
     progressFill.style.width = Math.min((n-1) / 3 * 100, 100) + '%';
   }
 
-  function uploadFile(file) {
-    dropzone.style.display = 'none';
+  function showStatus() {
+    document.getElementById('panelReport').style.display = 'none';
+    document.getElementById('panelTerm').style.display = 'none';
     statusBox.classList.add('show');
     openBtn.classList.remove('show');
     errorMsg.classList.remove('show');
     resetBtn.classList.remove('show');
     setStep(1);
-    statusMsg.textContent = '📤 업로드 중...';
+  }
 
+  function uploadFile(file) {
+    showStatus();
+    statusMsg.textContent = '📤 업로드 중...';
     const fd = new FormData();
     fd.append('file', file);
-
     fetch('/upload', { method: 'POST', body: fd })
       .then(r => r.json())
-      .then(data => {
-        if (data.error) throw new Error(data.error);
-        jobId = data.job_id;
-        pollStatus();
-      })
+      .then(data => { if (data.error) throw new Error(data.error); jobId = data.job_id; pollStatus(); })
+      .catch(e => showError(e.message));
+  }
+
+  function startTerm() {
+    const term = document.getElementById('termInput').value.trim();
+    if (!term) { alert('용어를 입력해주세요'); return; }
+    showStatus();
+    statusMsg.textContent = `💡 '${term}' 설명 생성 중...`;
+    fetch('/term', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ term }),
+    })
+      .then(r => r.json())
+      .then(data => { if (data.error) throw new Error(data.error); jobId = data.job_id; pollStatus(); })
       .catch(e => showError(e.message));
   }
 
@@ -280,10 +398,8 @@
     pollTimer = setInterval(async () => {
       const r = await fetch('/status/' + jobId);
       const data = await r.json();
-
       statusMsg.textContent = data.message || '처리 중...';
       setStep(data.step || 1);
-
       if (data.status === 'complete') {
         clearInterval(pollTimer);
         currentSlug = data.slug;
@@ -307,19 +423,15 @@
 
   function reset() {
     clearInterval(pollTimer);
-    jobId = null;
-    currentSlug = null;
-    dropzone.style.display = '';
+    jobId = null; currentSlug = null;
     statusBox.classList.remove('show');
     openBtn.classList.remove('show');
     errorMsg.classList.remove('show');
     resetBtn.classList.remove('show');
     fileInput.value = '';
     progressFill.style.width = '0%';
-    [1,2,3,4].forEach(i => {
-      const el = document.getElementById('step' + i);
-      el.classList.remove('active', 'done');
-    });
+    [1,2,3,4].forEach(i => document.getElementById('step' + i).classList.remove('active','done'));
+    setMode(currentMode);
   }
 </script>
 </body>

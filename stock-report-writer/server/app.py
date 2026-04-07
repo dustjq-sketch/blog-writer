@@ -253,6 +253,167 @@ Bottom: White text "{broker} | {r1t}"
 
 
 # ─────────────────────────────────────────
+# 경제 용어 설명 생성
+# ─────────────────────────────────────────
+
+def generate_term_content(term: str) -> dict:
+    """Gemini로 경제 용어 설명 생성"""
+    from google import genai
+    client = genai.Client(api_key=GEMINI_API_KEY)
+
+    prompt = f"""경제 용어 "{term}"을 20~40대 직장인이 쉽게 이해할 수 있도록 설명해줘.
+실생활 영향은 구체적인 금액/수치를 포함해서 설명해줘.
+다른 텍스트 없이 JSON만 출력해줘.
+
+{{
+  "term": "{term}",
+  "english": "영어명",
+  "category": "카테고리(금리/투자/부동산/거시경제 등)",
+  "one_line": "한 줄 정의(20자 이내)",
+  "definition": "쉬운 설명(3-4문장)",
+  "how_it_works": ["단계1(20자이내)", "단계2(20자이내)", "단계3(20자이내)"],
+  "key_points": ["핵심포인트1(20자이내)", "핵심포인트2(20자이내)", "핵심포인트3(20자이내)"],
+  "real_life": [
+    {{"case": "상황1(15자이내)", "impact": "구체적 영향(수치 포함, 30자이내)"}},
+    {{"case": "상황2(15자이내)", "impact": "구체적 영향(30자이내)"}},
+    {{"case": "상황3(15자이내)", "impact": "구체적 영향(30자이내)"}}
+  ],
+  "life_summary": "핵심 한 줄 결론(20자이내)"
+}}"""
+
+    response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+    text = response.text.strip()
+    m = re.search(r"\{.*\}", text, re.DOTALL)
+    return json.loads(m.group() if m else text)
+
+
+def make_term_slug(data: dict) -> str:
+    from datetime import date as _d
+    english = re.sub(r"[^\w]", "", (data.get("english") or data.get("term") or "term")).lower()[:20]
+    today = _d.today().strftime("%Y%m%d")
+    return f"term-{english}-{today}"
+
+
+def create_term_files(slug: str, d: dict):
+    out = OUTPUTS_DIR / slug
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "images").mkdir(exist_ok=True)
+
+    term       = d.get("term") or ""
+    english    = d.get("english") or ""
+    category   = d.get("category") or ""
+    one_line   = d.get("one_line") or ""
+    definition = d.get("definition") or ""
+    how_works  = d.get("how_it_works") or []
+    key_points = d.get("key_points") or []
+    real_life  = d.get("real_life") or []
+    life_sum   = d.get("life_summary") or ""
+
+    def safe(v): return str(v) if v is not None else ""
+
+    works_md = "\n".join(f"- {safe(w)}" for w in how_works)
+    points_md = "\n".join(f"- {safe(p)}" for p in key_points)
+    real_md = "\n".join(f"- {safe(r.get('case',''))} → {safe(r.get('impact',''))}" for r in real_life)
+
+    (out / "summary.md").write_text(f"""# {term} 경제 용어 설명
+- **영어**: {english}
+- **카테고리**: {category}
+- **한 줄 정의**: {one_line}
+
+---
+
+## 정의
+{definition}
+
+---
+
+## 작동 원리
+{works_md}
+
+---
+
+## 핵심 포인트
+{points_md}
+
+---
+
+## 실생활 영향
+{real_md}
+
+**결론**: {life_sum}
+
+---
+*리포트읽어드림 - 경제 용어 한방 정리*
+""", encoding="utf-8")
+
+    rl = real_life + [{"case": "", "impact": ""}] * 3
+    hw = how_works + [""] * 3
+    kp = key_points + [""] * 3
+
+    (out / "shorts-script.md").write_text(f"""# {term} 쇼츠 스크립트
+**예상 시간**: 약 45초
+
+---
+
+## 스크립트
+
+[후크]
+"'{term}' 아시나요?
+{one_line}인데요.
+30초 만에 설명해 드릴게요."
+
+[본론]
+"{definition}
+
+쉽게 말하면요.
+{safe(hw[0])}.
+그 다음 {safe(hw[1])}.
+결국 {safe(hw[2])}."
+
+[결론]
+"실생활에서는요.
+{safe(rl[0].get('case',''))}이면 {safe(rl[0].get('impact',''))}.
+{safe(rl[1].get('case',''))}이면 {safe(rl[1].get('impact',''))}.
+{life_sum}."
+
+[CTA]
+"리포트읽어드림 구독하면 이런 경제 용어 계속 쉽게 알려드려요!"
+
+---
+*본 영상은 정보 제공 목적이며 투자 권유가 아닙니다.*
+""", encoding="utf-8")
+
+
+def process_term_job(job_id: str, term: str):
+    try:
+        jobs[job_id].update({"step": 1, "message": f"💡 '{term}' 설명 생성 중..."})
+        data = generate_term_content(term)
+        slug = make_term_slug(data)
+
+        jobs[job_id].update({"step": 2, "message": "📝 콘텐츠 파일 생성 중..."})
+        create_term_files(slug, data)
+
+        jobs[job_id].update({"step": 3, "message": "🎬 카드·음성·영상 생성 중..."})
+        result = subprocess.run(
+            ["python3", str(BASE_DIR / "scripts" / "produce.py"), slug, "term"],
+            capture_output=True, text=True, cwd=str(BASE_DIR),
+        )
+        if result.returncode != 0:
+            err = (result.stderr or result.stdout or "알 수 없는 오류")[-400:]
+            raise RuntimeError(err)
+
+        jobs[job_id].update({
+            "status": "complete", "step": 4,
+            "message": f"✅ 완료! Outputs/{slug} 폴더를 확인하세요.",
+            "slug": slug,
+        })
+    except Exception as e:
+        tb = traceback.format_exc()
+        print(f"[ERROR] {tb}")
+        jobs[job_id].update({"status": "error", "message": f"❌ 오류: {str(e)[:300]}"})
+
+
+# ─────────────────────────────────────────
 # 산업 리포트 PDF 파싱 및 파일 생성
 # ─────────────────────────────────────────
 
@@ -557,6 +718,18 @@ def upload():
 @app.route("/status/<job_id>")
 def status(job_id):
     return jsonify(jobs.get(job_id, {"status": "unknown", "message": "알 수 없는 작업"}))
+
+
+@app.route("/term", methods=["POST"])
+def term_endpoint():
+    data = request.get_json() or {}
+    term = data.get("term", "").strip()
+    if not term:
+        return jsonify({"error": "용어를 입력해주세요"}), 400
+    job_id = str(uuid.uuid4())[:8]
+    jobs[job_id] = {"status": "processing", "step": 0, "message": "⏳ 시작 중..."}
+    threading.Thread(target=process_term_job, args=(job_id, term), daemon=True).start()
+    return jsonify({"job_id": job_id})
 
 
 @app.route("/open/<slug>")
