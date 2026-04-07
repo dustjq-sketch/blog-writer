@@ -108,7 +108,7 @@ def generate_images(slug: str):
         metrics.append((parts[0], parts[1], parts[2]))
 
     images_dir = OUTPUTS_DIR / slug / "images"
-    images_dir.mkdir(exist_ok=True)
+    images_dir.mkdir(parents=True, exist_ok=True)
 
     # ── 색상 팔레트 ──
     BG       = (13,  27,  42)
