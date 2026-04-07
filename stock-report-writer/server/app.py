@@ -83,9 +83,9 @@ def make_slug(data: dict) -> str:
         "심텍": "simtec", "HD현대중공업": "hdhhi", "현대중공업": "hdhhi",
         "SK하이닉스": "skhynix", "삼성전자": "sec", "LG에너지솔루션": "lges",
     }
-    name = data.get("stock_name", "")
-    code = data.get("stock_code", "0")
-    date = data.get("date", "20260101").replace("-", "")
+    name = data.get("stock_name") or ""
+    code = data.get("stock_code") or "0"
+    date = (data.get("date") or "20260101").replace("-", "")
     en = name_map.get(name, f"s{code}")
     return f"{en}-{date}"
 
@@ -99,14 +99,14 @@ def create_content_files(slug: str, d: dict):
     out.mkdir(parents=True, exist_ok=True)
     (out / "images").mkdir(exist_ok=True)
 
-    name    = d.get("stock_name", "")
-    code    = d.get("stock_code", "")
-    broker  = d.get("broker", "")
-    date    = d.get("date", "")
-    opinion = d.get("opinion", "BUY")
-    target  = d.get("target_price", "")
-    current = d.get("current_price", "")
-    upside  = d.get("upside", "")
+    name    = d.get("stock_name") or ""
+    code    = d.get("stock_code") or ""
+    broker  = d.get("broker") or ""
+    date    = d.get("date") or ""
+    opinion = d.get("opinion") or "BUY"
+    target  = d.get("target_price") or ""
+    current = d.get("current_price") or ""
+    upside  = d.get("upside") or ""
     r1t = d.get("reason1_title", ""); r1b = d.get("reason1_body", "")
     r2t = d.get("reason2_title", ""); r2b = d.get("reason2_body", "")
     r3t = d.get("reason3_title", ""); r3b = d.get("reason3_body", "")
