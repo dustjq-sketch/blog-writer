@@ -423,10 +423,10 @@ def generate_video(slug: str, video_type: str = "shorts", is_term: bool = False)
     n = len(image_files)
     FADE = 1.2 if is_term else 0.6  # 크로스페이드 길이(초)
 
-    DISC_DUR = 4  # 면책 카드 길이(초)
+    DISC_DUR = 6  # 면책 카드 길이(초) - 넉넉하게 6초
     # 크로스페이드 오버랩을 고려한 총 이미지 시간
-    # 총 영상 = sum(이미지) + DISC_DUR - n*FADE  →  sum(이미지) = audio - DISC_DUR + n*FADE
-    total_img_time = max(audio.duration - DISC_DUR + n * FADE, n * 2.0)
+    # +0.5 버퍼: 부동소수점 오차로 음성이 잘리지 않도록
+    total_img_time = max(audio.duration - DISC_DUR + n * FADE + 0.5, n * 2.0)
 
     # 스크립트 섹션 길이로 이미지별 가중치 계산
     script_file = OUTPUTS_DIR / slug / f"{video_type}-script.md"
