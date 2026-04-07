@@ -502,6 +502,22 @@ def generate_video(slug: str, video_type: str = "shorts", is_term: bool = False)
 # Step 1c: 경제 용어 카드 생성 (1080x1920)
 # ─────────────────────────────────────────
 
+def _clean(text: str) -> str:
+    """PIL에서 렌더링 안 되는 이모지/특수문자 제거 (한글, ASCII, 기본 기호만 유지)"""
+    return re.sub(
+        r'[^\u0020-\u007E'          # ASCII printable
+        r'\uAC00-\uD7A3'            # 한글 완성형
+        r'\u1100-\u11FF'            # 한글 자모
+        r'\u3130-\u318F'            # 한글 호환 자모
+        r'\u0080-\u024F'            # 라틴 확장
+        r"\u2018-\u201F"            # 인용 부호
+        r'\u2026\u2025\u2014\u2013' # …, ‥, —, –
+        r'\u00B7\u30FB'             # ·, ・
+        r'\+\-\*\/\(\)\[\]\{\}]',   # 수식 기호
+        '', text
+    )
+
+
 def generate_term_images(slug: str) -> list:
     """경제 용어 카드 4장 생성 - BUGI 스타일 (따뜻한 오렌지/베이지)"""
     from PIL import Image, ImageDraw
@@ -515,16 +531,16 @@ def generate_term_images(slug: str) -> list:
 
     def ex(pattern, default=""):
         m = re.search(pattern, content)
-        return m.group(1).strip() if m else default
+        return _clean(m.group(1).strip()) if m else default
 
-    term        = content.split('\n')[0].replace('# ', '').split(' 경제')[0].strip()
+    term        = _clean(content.split('\n')[0].replace('# ', '').split(' 경제')[0].strip())
     english     = ex(r'\*\*영어\*\*:\s*([^\n]+)', "")
     one_line    = ex(r'\*\*한 줄 요약\*\*:\s*([^\n]+)', "")
-    why_know    = _parse_section(content, "왜 알아야 할까요").replace('\n', ' ')
-    what_means  = _parse_section(content, "무슨 뜻인가요").replace('\n', ' ')
-    analogy     = _parse_section(content, "쉬운 비유").replace('\n', ' ')
-    money_items = _parse_bullets(_parse_section(content, "내 돈에 미치는 영향"))
-    key_items   = _parse_bullets(_parse_section(content, "핵심 요약"))
+    why_know    = _clean(_parse_section(content, "왜 알아야 할까요").replace('\n', ' '))
+    what_means  = _clean(_parse_section(content, "무슨 뜻인가요").replace('\n', ' '))
+    analogy     = _clean(_parse_section(content, "쉬운 비유").replace('\n', ' '))
+    money_items = [_clean(x) for x in _parse_bullets(_parse_section(content, "내 돈에 미치는 영향"))]
+    key_items   = [_clean(x) for x in _parse_bullets(_parse_section(content, "핵심 요약"))]
     catchphrase = ex(r'\*\*슬로건\*\*:\s*([^\n]+)', "")
 
     images_dir = OUTPUTS_DIR / slug / "images"
@@ -570,13 +586,13 @@ def generate_term_images(slug: str) -> list:
     if english:
         d.text((W // 2, 370), f"({english})", font=_load_font(42), fill=GRAY, anchor="mm")
 
-    # 한 줄 요약 박스 (오렌지) - 동적 높이
-    ol_lines = _wrap(one_line, 20)[:2]
-    box_h = 100 + len(ol_lines) * 52
+    # 한 줄 요약 박스 (오렌지) - 동적 높이 (충분한 패딩)
+    ol_lines = _wrap(one_line, 18)[:2]
+    box_h = 140 + len(ol_lines) * 68
     _rounded_rect(d, (60, 415, W - 60, 415 + box_h), 20, ORANGE)
-    d.text((W // 2, 448), "한 줄 요약", font=_load_font(32, bold=True), fill=LIGHT_ORG, anchor="mm")
+    d.text((W // 2, 453), "한 줄 요약", font=_load_font(32, bold=True), fill=LIGHT_ORG, anchor="mm")
     for i, ln in enumerate(ol_lines):
-        d.text((W // 2, 498 + i * 52), ln, font=_load_font(42, bold=True), fill=WHITE, anchor="mm")
+        d.text((W // 2, 510 + i * 68), ln, font=_load_font(42, bold=True), fill=WHITE, anchor="mm")
 
     sep_y = 415 + box_h + 30
     d.line([(60, sep_y), (W - 60, sep_y)], fill=LIGHT_ORG, width=3)
@@ -600,23 +616,23 @@ def generate_term_images(slug: str) -> list:
     d.text((W // 2, 310), "무슨 뜻인가요?", font=_load_font(52, bold=True), fill=ORANGE, anchor="mm")
     d.line([(60, 365), (W - 60, 365)], fill=LIGHT_ORG, width=3)
 
-    # 쉬운 설명 카드 - 최대 4줄 고정
-    wm_lines = _wrap(what_means, 19)[:4]
-    wm_h = 80 + len(wm_lines) * 68
+    # 쉬운 설명 카드 - 최대 3줄 (넘치지 않게)
+    wm_lines = _wrap(what_means, 18)[:3]
+    wm_h = 100 + len(wm_lines) * 78
     _rounded_rect(d, (60, 395, W - 60, 395 + wm_h), 22, WHITE)
     for i, ln in enumerate(wm_lines):
-        d.text((W // 2, 455 + i * 68), ln, font=_load_font(42), fill=DARK_GRAY, anchor="mm")
+        d.text((W // 2, 460 + i * 78), ln, font=_load_font(42), fill=DARK_GRAY, anchor="mm")
 
-    # 비유 카드 - 최대 4줄 고정
-    an_start = 395 + wm_h + 30
-    d.text((80, an_start + 44), "쉽게 비유하면요", font=_load_font(44, bold=True), fill=ORANGE, anchor="lm")
-    an_card_y = an_start + 100
-    an_lines = _wrap(analogy, 19)[:4]
-    an_h = 70 + len(an_lines) * 66
+    # 비유 카드
+    an_start = 395 + wm_h + 40
+    d.text((80, an_start + 46), "쉽게 비유하면요", font=_load_font(44, bold=True), fill=ORANGE, anchor="lm")
+    an_card_y = an_start + 108
+    an_lines = _wrap(analogy, 18)[:3]
+    an_h = 90 + len(an_lines) * 72
     _rounded_rect(d, (60, an_card_y, W - 60, an_card_y + an_h), 22, LIGHT_ORG)
-    d.line([(100, an_card_y + 10), (W - 100, an_card_y + 10)], fill=ORANGE, width=2)
+    d.line([(100, an_card_y + 14), (W - 100, an_card_y + 14)], fill=ORANGE, width=2)
     for i, ln in enumerate(an_lines):
-        d.text((W // 2, an_card_y + 55 + i * 66), ln, font=_load_font(42), fill=DARK, anchor="mm")
+        d.text((W // 2, an_card_y + 65 + i * 72), ln, font=_load_font(42), fill=DARK, anchor="mm")
 
     bottom_bar(d)
     save_card(img, 2)
