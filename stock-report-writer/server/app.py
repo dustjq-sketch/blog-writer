@@ -3,7 +3,7 @@
 Usage: python3 server/app.py
 """
 
-import os, subprocess, threading, uuid, json, re, io
+import os, subprocess, threading, uuid, json, re, io, traceback
 from pathlib import Path
 from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
@@ -279,7 +279,9 @@ def process_job(job_id: str, image_path: Path):
         })
 
     except Exception as e:
-        jobs[job_id].update({"status": "error", "message": f"❌ 오류: {str(e)[:300]}"})
+        tb = traceback.format_exc()
+        print(f"[ERROR] {tb}")
+        jobs[job_id].update({"status": "error", "message": f"❌ 오류: {str(e)[:300]}\n{tb[-500:]}"})
 
 
 # ─────────────────────────────────────────
