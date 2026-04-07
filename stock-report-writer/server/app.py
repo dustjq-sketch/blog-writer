@@ -4,6 +4,7 @@ Usage: python3 server/app.py
 """
 
 import os, subprocess, threading, uuid, json, re, io, traceback
+from datetime import date as _date
 from pathlib import Path
 from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
@@ -85,7 +86,8 @@ def make_slug(data: dict) -> str:
     }
     name = data.get("stock_name") or ""
     code = data.get("stock_code") or "0"
-    date = (data.get("date") or "20260101").replace("-", "")
+    today = _date.today().strftime("%Y%m%d")
+    date = (data.get("date") or today).replace("-", "")
     en = name_map.get(name, f"s{code}")
     return f"{en}-{date}"
 
