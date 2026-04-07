@@ -253,24 +253,263 @@ Bottom: White text "{broker} | {r1t}"
 
 
 # ─────────────────────────────────────────
+# 산업 리포트 PDF 파싱 및 파일 생성
+# ─────────────────────────────────────────
+
+def extract_industry_data(pdf_path: Path) -> dict:
+    """PDF를 Gemini로 분석 → 산업 리포트 구조화"""
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    pdf_bytes = pdf_path.read_bytes()
+
+    prompt = """이 증권사 산업/분야 리포트 PDF에서 다음 정보를 JSON으로 추출해줘.
+다른 텍스트 없이 JSON만 출력해줘.
+
+{
+  "industry_name": "산업명(예: 반도체, 2차전지, 건설)",
+  "report_title": "리포트 제목",
+  "broker": "증권사명",
+  "date": "발행일(YYYY-MM-DD, 없으면 null)",
+  "summary_points": ["핵심포인트1(20자이내)", "핵심포인트2", "핵심포인트3", "핵심포인트4"],
+  "current_state": "현재 산업 현황 설명(3-4문장)",
+  "trends": [
+    {"title": "트렌드1 제목(15자이내)", "body": "설명(2-3문장)"},
+    {"title": "트렌드2 제목(15자이내)", "body": "설명(2-3문장)"},
+    {"title": "트렌드3 제목(15자이내)", "body": "설명(2-3문장)"}
+  ],
+  "key_metrics": [
+    {"item": "항목명", "value": "수치", "change": "변화"}
+  ],
+  "outlook": "향후 전망(3-4문장)",
+  "investment_points": ["투자포인트1(20자이내)", "투자포인트2", "투자포인트3"],
+  "risks": ["리스크1(20자이내)", "리스크2"],
+  "conclusion": "핵심 결론(2-3문장)"
+}"""
+
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=[
+            types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf"),
+            prompt,
+        ],
+    )
+    text = response.text.strip()
+    m = re.search(r"\{.*\}", text, re.DOTALL)
+    return json.loads(m.group() if m else text)
+
+
+def make_industry_slug(data: dict) -> str:
+    industry_map = {
+        "반도체": "semiconductor", "2차전지": "battery", "배터리": "battery",
+        "건설": "construction", "자동차": "auto", "철강": "steel",
+        "화학": "chemical", "바이오": "bio", "헬스케어": "healthcare",
+        "금융": "finance", "은행": "bank", "보험": "insurance",
+        "소프트웨어": "sw", "게임": "game", "유통": "retail",
+        "음식료": "food", "에너지": "energy", "조선": "ship",
+        "항공": "airline", "물류": "logistics", "부동산": "realty",
+    }
+    industry = data.get("industry_name") or "industry"
+    raw_date = data.get("date") or ""
+    if raw_date.strip() in ("N/A", "n/a", "없음", "미상", "unknown", "-"):
+        raw_date = ""
+    date = re.sub(r"[^\d]", "", raw_date)
+    en = industry_map.get(industry, re.sub(r"[^\w]", "", industry).lower()[:10] or "industry")
+    return f"{en}-industry-{date}" if date else f"{en}-industry"
+
+
+def create_industry_files(slug: str, d: dict):
+    out = OUTPUTS_DIR / slug
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "images").mkdir(exist_ok=True)
+
+    industry = d.get("industry_name") or "산업"
+    title    = d.get("report_title") or ""
+    broker   = d.get("broker") or ""
+    date     = d.get("date") or ""
+    summary_points = d.get("summary_points") or []
+    current_state  = d.get("current_state") or ""
+    trends         = d.get("trends") or []
+    metrics        = d.get("key_metrics") or []
+    outlook        = d.get("outlook") or ""
+    invest_points  = d.get("investment_points") or []
+    risks          = d.get("risks") or []
+    conclusion     = d.get("conclusion") or ""
+
+    def safe(v):
+        return str(v) if v is not None else ""
+
+    trend_md = ""
+    for i, t in enumerate(trends[:3]):
+        trend_md += f"\n**{i+1}. {safe(t.get('title'))}**\n{safe(t.get('body'))}\n"
+
+    m_rows = "| 항목 | 수치 | 변화 |\n|------|------|------|\n"
+    for m in metrics[:8]:
+        m_rows += f"| {safe(m.get('item'))} | {safe(m.get('value'))} | {safe(m.get('change'))} |\n"
+
+    (out / "summary.md").write_text(f"""# {industry} 산업 리포트 핵심 요약
+- **증권사**: {broker}
+- **발행일**: {date}
+- **리포트 제목**: {title}
+
+---
+
+## 핵심 요약
+{chr(10).join(f'- {p}' for p in summary_points)}
+
+---
+
+## 현황
+{current_state}
+
+---
+
+## 주요 트렌드
+{trend_md}
+---
+
+## 주요 지표
+{m_rows}
+---
+
+## 전망
+{outlook}
+
+---
+
+## 투자 포인트
+{chr(10).join(f'- {p}' for p in invest_points)}
+
+---
+
+## 리스크
+{chr(10).join(f'- {r}' for r in risks)}
+
+---
+
+## 결론
+{conclusion}
+
+---
+*출처: {broker} 리포트 ({date})*
+*본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.*
+""", encoding="utf-8")
+
+    t = [trends[i] if i < len(trends) else {"title": "", "body": ""} for i in range(3)]
+    ip = invest_points + [""] * 3
+    r  = risks + [""]
+
+    (out / "youtube-script.md").write_text(f"""# {industry} 산업 리포트 롱폼 스크립트
+**예상 시간**: 약 7분
+**리포트 출처**: {broker} ({date})
+
+---
+
+## 스크립트
+
+[도입]
+"안녕하세요, 리포트읽어드림입니다.
+오늘은 {broker}에서 발행한 {industry} 산업 리포트를 읽어드릴게요.
+{title} 리포트인데요, 핵심만 빠르게 정리해 드릴게요."
+
+[현황]
+"먼저 현재 {industry} 산업 현황을 보면요.
+{current_state}"
+
+[트렌드1]
+"자, 이제 핵심 트렌드 세 가지를 말씀드릴게요.
+첫 번째는 {t[0]['title']}입니다.
+{t[0]['body']}"
+
+[트렌드2]
+"두 번째 트렌드는 {t[1]['title']}예요.
+{t[1]['body']}"
+
+[트렌드3]
+"세 번째 트렌드는 {t[2]['title']}이에요.
+{t[2]['body']}"
+
+[지표]
+"주요 수치들도 잠깐 보고 갈게요.
+화면에서 핵심 데이터들을 확인해보세요."
+
+[전망]
+"그렇다면 앞으로 전망은 어떨까요?
+{outlook}"
+
+[투자포인트]
+"투자 관점에서 리포트가 짚은 포인트는 세 가지예요.
+첫째, {ip[0]}.
+둘째, {ip[1]}.
+셋째, {ip[2]}."
+
+[결론]
+"오늘 {industry} 산업 리포트 핵심만 정리해 드렸는데요.
+{conclusion}
+리스크도 말씀드리면, {r[0]}{(' 그리고 ' + r[1]) if r[1] else ''}이 있다고 리포트는 지적하고 있어요."
+
+[CTA]
+"리포트읽어드림 구독하시면 매주 증권사 리포트 핵심을 이렇게 정리해 드려요.
+구독 부탁드리고, 다음 리포트에서 뵙겠습니다!"
+
+---
+
+## 영상 설명란
+
+{industry} 산업 리포트 핵심 정리 | {broker}
+
+{chr(10).join(f'✅ {p}' for p in summary_points)}
+
+⚠️ 투자 권유가 아닌 정보 제공 목적입니다.
+출처: {broker} 리포트 ({date})
+
+#{industry} #증권사리포트 #산업분석 #주식 #투자
+
+---
+*본 영상은 리포트를 읽어드리는 것이며 매수, 매도 추천이 아니며 투자에 대한 책임은 본인에게 있습니다.*
+""", encoding="utf-8")
+
+
+# ─────────────────────────────────────────
 # 백그라운드 처리
 # ─────────────────────────────────────────
 
 def process_job(job_id: str, image_path: Path):
     try:
-        jobs[job_id].update({"step": 1, "message": "📊 리포트 분석 중... (약 10초)"})
-        data = extract_report_data(image_path)
-        slug = make_slug(data)
-        stock = data.get("stock_name", slug)
+        is_pdf = image_path.suffix.lower() == ".pdf"
 
-        jobs[job_id].update({"step": 2, "message": f"📝 {stock} 콘텐츠 파일 생성 중..."})
-        create_content_files(slug, data)
+        if is_pdf:
+            # ── 산업 리포트 롱폼 파이프라인 ──
+            jobs[job_id].update({"step": 1, "message": "📊 산업 리포트 분석 중... (약 20초)"})
+            data = extract_industry_data(image_path)
+            slug = make_industry_slug(data)
+            industry = data.get("industry_name") or slug
 
-        jobs[job_id].update({"step": 3, "message": "🎬 이미지·음성·영상 생성 중... (약 1분)"})
-        result = subprocess.run(
-            ["python3", str(BASE_DIR / "scripts" / "produce.py"), slug, "shorts"],
-            capture_output=True, text=True, cwd=str(BASE_DIR),
-        )
+            jobs[job_id].update({"step": 2, "message": f"📝 {industry} 콘텐츠 파일 생성 중..."})
+            create_industry_files(slug, data)
+
+            jobs[job_id].update({"step": 3, "message": "🎬 슬라이드·음성·영상 생성 중... (약 3분)"})
+            result = subprocess.run(
+                ["python3", str(BASE_DIR / "scripts" / "produce.py"), slug, "industry"],
+                capture_output=True, text=True, cwd=str(BASE_DIR),
+            )
+        else:
+            # ── 종목 리포트 쇼츠 파이프라인 ──
+            jobs[job_id].update({"step": 1, "message": "📊 리포트 분석 중... (약 10초)"})
+            data = extract_report_data(image_path)
+            slug = make_slug(data)
+            stock = data.get("stock_name") or slug
+
+            jobs[job_id].update({"step": 2, "message": f"📝 {stock} 콘텐츠 파일 생성 중..."})
+            create_content_files(slug, data)
+
+            jobs[job_id].update({"step": 3, "message": "🎬 이미지·음성·영상 생성 중... (약 1분)"})
+            result = subprocess.run(
+                ["python3", str(BASE_DIR / "scripts" / "produce.py"), slug, "shorts"],
+                capture_output=True, text=True, cwd=str(BASE_DIR),
+            )
+
         if result.returncode != 0:
             err = (result.stderr or result.stdout or "알 수 없는 오류")[-400:]
             raise RuntimeError(err)

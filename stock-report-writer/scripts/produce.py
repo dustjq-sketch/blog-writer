@@ -489,6 +489,259 @@ def generate_video(slug: str, video_type: str = "shorts"):
 
 
 # ─────────────────────────────────────────
+# Step 1b: 산업 리포트 슬라이드 생성 (1920x1080)
+# ─────────────────────────────────────────
+
+def _parse_section(content: str, heading: str) -> str:
+    """## heading 섹션 텍스트 추출"""
+    in_section = False
+    lines = []
+    for line in content.split('\n'):
+        if f'## {heading}' in line:
+            in_section = True
+            continue
+        if in_section and line.startswith('## '):
+            break
+        if in_section:
+            lines.append(line)
+    return '\n'.join(lines).strip()
+
+
+def _parse_bullets(text: str) -> list:
+    """- 항목 리스트 추출"""
+    items = []
+    for line in text.split('\n'):
+        line = line.strip().lstrip('- ').strip()
+        if line and not line.startswith('#') and not line.startswith('|') and not line.startswith('*출처'):
+            items.append(line)
+    return items
+
+
+def _wrap(text: str, max_chars: int) -> list:
+    """한국어 텍스트 줄바꿈 (max_chars 기준)"""
+    text = text.strip()
+    if len(text) <= max_chars:
+        return [text]
+    lines = []
+    while len(text) > max_chars:
+        sp = text.rfind(' ', 0, max_chars + 4)
+        if sp == -1:
+            sp = max_chars
+        lines.append(text[:sp].strip())
+        text = text[sp:].strip()
+    if text:
+        lines.append(text)
+    return lines
+
+
+def generate_industry_images(slug: str) -> list:
+    """산업 리포트 슬라이드 10장 생성 (1920x1080 landscape)"""
+    from PIL import Image, ImageDraw
+
+    summary_file = OUTPUTS_DIR / slug / "summary.md"
+    if not summary_file.exists():
+        print(f"⚠️  summary.md 없음: {summary_file}")
+        return []
+
+    content = summary_file.read_text(encoding="utf-8")
+
+    def extract(pattern, default=""):
+        m = re.search(pattern, content)
+        return m.group(1).strip() if m else default
+
+    # 기본 정보
+    title_m = re.search(r'^# (.+?) 산업', content, re.MULTILINE)
+    industry = title_m.group(1) if title_m else slug
+    broker   = extract(r'\*\*증권사\*\*[^:]*:\s*\**([^(\n\*]+)', "증권사")
+    date     = extract(r'\*\*발행일\*\*:\s*([^\n]+)', "")
+    rpt_title = extract(r'\*\*리포트 제목\*\*:\s*([^\n]+)', "")
+
+    # 섹션 파싱
+    summary_points = _parse_bullets(_parse_section(content, "핵심 요약"))
+    current_state  = _parse_section(content, "현황").replace('\n', ' ')
+    outlook_text   = _parse_section(content, "전망").replace('\n', ' ')
+    conclusion_text= _parse_section(content, "결론").replace('\n', ' ')
+    invest_points  = _parse_bullets(_parse_section(content, "투자 포인트"))
+
+    # 트렌드 파싱
+    trend_pattern = re.findall(r'\*\*\d+\.\s*(.+?)\*\*\n([\s\S]+?)(?=\n\*\*\d+\.|\n---|\n## |\Z)', content)
+    trends = [{"title": t.strip(), "body": b.strip().replace('\n', ' ')} for t, b in trend_pattern[:3]]
+    while len(trends) < 3:
+        trends.append({"title": "", "body": ""})
+
+    # 지표 테이블
+    metrics = []
+    for line in content.split('\n'):
+        line = line.strip()
+        if not line.startswith('|') or '---' in line:
+            continue
+        parts = [p.strip() for p in line.strip('|').split('|')]
+        if len(parts) < 3 or parts[0] in ('항목', ''):
+            continue
+        metrics.append((parts[0], parts[1], parts[2]))
+
+    images_dir = OUTPUTS_DIR / slug / "images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+
+    BG      = (13,  27,  42)
+    WHITE   = (255, 255, 255)
+    RED     = (220,  38,  38)
+    GRAY    = (160, 170, 185)
+    CARD_BG = (22,  42,  62)
+    GREEN   = (34,  197,  94)
+    BLUE    = (59,  130, 246)
+    YELLOW  = (250, 204,  21)
+
+    W, H = 1920, 1080
+    image_paths = []
+    slide_idx = [0]
+
+    def save_slide(img):
+        slide_idx[0] += 1
+        out = images_dir / f"{slug}-img-{slide_idx[0]:02d}.png"
+        img.save(str(out))
+        image_paths.append(out)
+        print(f"  ✅ 슬라이드 {slide_idx[0]}: {out.name}")
+
+    def hdr(d, text):
+        d.text((W // 2, 58), text, font=_load_font(36), fill=GRAY, anchor="mm")
+        d.line([(80, 96), (W - 80, 96)], fill=(40, 60, 80), width=2)
+
+    def ftr(d):
+        d.line([(80, H - 90), (W - 80, H - 90)], fill=(40, 60, 80), width=2)
+        info = f"리포트읽어드림  |  출처: {broker.strip()}" + (f"  |  {date}" if date else "")
+        d.text((W // 2, H - 48), info, font=_load_font(30), fill=GRAY, anchor="mm")
+
+    # ── 슬라이드 1: 타이틀 ──
+    img = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(img)
+    d.text((W // 2, 110), "리포트읽어드림", font=_load_font(42), fill=GRAY, anchor="mm")
+    d.line([(W // 2 - 220, 155), (W // 2 + 220, 155)], fill=(40, 60, 80), width=2)
+    d.text((W // 2, H // 2 - 110), industry, font=_load_font(120, bold=True), fill=WHITE, anchor="mm")
+    d.text((W // 2, H // 2 + 20), "산업 리포트 분석", font=_load_font(52), fill=GRAY, anchor="mm")
+    if rpt_title:
+        for i, line in enumerate(_wrap(rpt_title, 36)[:2]):
+            d.text((W // 2, H // 2 + 120 + i * 62), line, font=_load_font(44), fill=GRAY, anchor="mm")
+    broker_info = f"{broker.strip()}  |  {date}" if date else broker.strip()
+    d.text((W // 2, H - 55), broker_info, font=_load_font(34), fill=(80, 110, 140), anchor="mm")
+    save_slide(img)
+
+    # ── 슬라이드 2: 핵심 요약 (2×2 그리드) ──
+    img = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(img)
+    hdr(d, "핵심 요약")
+    d.text((W // 2, 158), f"{industry} 리포트 핵심 4가지", font=_load_font(64, bold=True), fill=WHITE, anchor="mm")
+    colors = [RED, GREEN, BLUE, YELLOW]
+    grid = [(W // 4, H // 2 - 80), (3 * W // 4, H // 2 - 80),
+            (W // 4, H // 2 + 200), (3 * W // 4, H // 2 + 200)]
+    for i, (cx, cy) in enumerate(grid):
+        pt = summary_points[i] if i < len(summary_points) else ""
+        _rounded_rect(d, (cx - 390, cy - 100, cx + 390, cy + 100), 18, CARD_BG)
+        d.text((cx - 330, cy), f"0{i+1}", font=_load_font(56, bold=True), fill=colors[i], anchor="lm")
+        for j, ln in enumerate(_wrap(pt, 19)[:2]):
+            d.text((cx - 220, cy - 22 + j * 46), ln, font=_load_font(36, bold=True), fill=WHITE, anchor="lm")
+    ftr(d)
+    save_slide(img)
+
+    # ── 슬라이드 3: 현황 ──
+    img = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(img)
+    hdr(d, "현재 산업 현황")
+    d.text((W // 2, 168), f"{industry} 현황", font=_load_font(72, bold=True), fill=WHITE, anchor="mm")
+    _rounded_rect(d, (80, 230, W - 80, H - 110), 22, CARD_BG)
+    lines = _wrap(current_state, 38)
+    for i, ln in enumerate(lines[:7]):
+        d.text((W // 2, 320 + i * 72), ln, font=_load_font(44), fill=WHITE, anchor="mm")
+    ftr(d)
+    save_slide(img)
+
+    # ── 슬라이드 4, 5, 6: 트렌드 ──
+    num_colors = [RED, GREEN, BLUE]
+    num_labels = ["①", "②", "③"]
+    for ti, trend in enumerate(trends):
+        img = Image.new('RGB', (W, H), BG)
+        d = ImageDraw.Draw(img)
+        hdr(d, f"핵심 트렌드 {ti + 1} / 3")
+        left_w = 420
+        d.text((left_w // 2, H // 2), num_labels[ti],
+               font=_load_font(200, bold=True), fill=num_colors[ti], anchor="mm")
+        d.line([(left_w, 120), (left_w, H - 110)], fill=(40, 60, 80), width=2)
+        rx = left_w + 70
+        ty = 180
+        for ln in _wrap(trend['title'], 24)[:2]:
+            d.text((rx, ty), ln, font=_load_font(72, bold=True), fill=WHITE, anchor="lm")
+            ty += 86
+        d.line([(rx, ty + 18), (W - 80, ty + 18)], fill=(40, 60, 80), width=2)
+        by = ty + 78
+        for ln in _wrap(trend['body'], 40)[:6]:
+            d.text((rx, by), ln, font=_load_font(42), fill=GRAY, anchor="lm")
+            by += 62
+        ftr(d)
+        save_slide(img)
+
+    # ── 슬라이드 7: 주요 지표 ──
+    img = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(img)
+    hdr(d, "주요 지표")
+    d.text((W // 2, 160), "핵심 수치", font=_load_font(68, bold=True), fill=WHITE, anchor="mm")
+    col_w = (W - 240) // 2
+    row_h = 104
+    sy = 230
+    for i, (item, val, change) in enumerate(metrics[:8]):
+        cx = 100 + (i % 2) * (col_w + 40)
+        cy = sy + (i // 2) * (row_h + 16)
+        _rounded_rect(d, (cx, cy, cx + col_w, cy + row_h), 12, CARD_BG)
+        d.text((cx + 22, cy + row_h // 2), item, font=_load_font(36), fill=GRAY, anchor="lm")
+        d.text((cx + col_w - 22, cy + row_h // 2 - 18), val,
+               font=_load_font(40, bold=True), fill=WHITE, anchor="rm")
+        d.text((cx + col_w - 22, cy + row_h // 2 + 22), change,
+               font=_load_font(30), fill=(RED if "+" in change else GRAY), anchor="rm")
+    ftr(d)
+    save_slide(img)
+
+    # ── 슬라이드 8: 전망 ──
+    img = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(img)
+    hdr(d, "앞으로의 전망")
+    d.text((W // 2, 168), f"{industry} 전망", font=_load_font(72, bold=True), fill=WHITE, anchor="mm")
+    _rounded_rect(d, (80, 230, W - 80, H - 110), 22, CARD_BG)
+    for i, ln in enumerate(_wrap(outlook_text, 38)[:7]):
+        d.text((W // 2, 320 + i * 72), ln, font=_load_font(44), fill=WHITE, anchor="mm")
+    ftr(d)
+    save_slide(img)
+
+    # ── 슬라이드 9: 투자 포인트 ──
+    img = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(img)
+    hdr(d, "투자 포인트")
+    d.text((W // 2, 165), "투자할 때 이것만 보세요", font=_load_font(62, bold=True), fill=WHITE, anchor="mm")
+    ip_colors = [RED, GREEN, BLUE]
+    for i, pt in enumerate(invest_points[:3]):
+        cy = 265 + i * 170
+        _rounded_rect(d, (80, cy, W - 80, cy + 148), 16, CARD_BG)
+        d.text((180, cy + 74), "▶", font=_load_font(52, bold=True), fill=ip_colors[i], anchor="mm")
+        for j, ln in enumerate(_wrap(pt, 44)[:2]):
+            d.text((260, cy + 44 + j * 52), ln,
+                   font=_load_font(44 if j == 0 else 40, bold=(j == 0)), fill=(WHITE if j == 0 else GRAY), anchor="lm")
+    ftr(d)
+    save_slide(img)
+
+    # ── 슬라이드 10: 결론 ──
+    img = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(img)
+    hdr(d, "결론")
+    d.text((W // 2, 165), "오늘 리포트 핵심 정리", font=_load_font(68, bold=True), fill=WHITE, anchor="mm")
+    _rounded_rect(d, (80, 230, W - 80, H - 180), 22, CARD_BG)
+    for i, ln in enumerate(_wrap(conclusion_text, 40)[:6]):
+        d.text((W // 2, 310 + i * 72), ln, font=_load_font(46), fill=WHITE, anchor="mm")
+    _rounded_rect(d, (W // 2 - 420, H - 160, W // 2 + 420, H - 80), 40, RED)
+    d.text((W // 2, H - 120), "리포트읽어드림 구독하기", font=_load_font(46, bold=True), fill=WHITE, anchor="mm")
+    save_slide(img)
+
+    return image_paths
+
+
+# ─────────────────────────────────────────
 # 메인
 # ─────────────────────────────────────────
 
@@ -521,12 +774,40 @@ def produce(slug: str, video_type: str = "shorts"):
     print("유튜브 업로드만 하면 끝이에요!")
 
 
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python3 scripts/produce.py <slug> [shorts|youtube]")
+def produce_industry(slug: str):
+    """산업 리포트 롱폼 영상 파이프라인"""
+    out_dir = OUTPUTS_DIR / slug
+    if not out_dir.exists():
+        available = [d.name for d in OUTPUTS_DIR.iterdir() if d.is_dir()]
+        print(f"❌ 슬러그 없음: {slug}")
+        print(f"   사용 가능: {available}")
         sys.exit(1)
 
-    produce(
-        slug=sys.argv[1],
-        video_type=sys.argv[2] if len(sys.argv) > 2 else "shorts",
-    )
+    print(f"\n{'='*50}")
+    print(f"🏭  리포트읽어드림 산업 리포트 롱폼")
+    print(f"    슬러그: {slug}")
+    print(f"{'='*50}")
+
+    print("\n[1/3] 슬라이드 생성 중...")
+    generate_industry_images(slug)
+
+    print("\n[2/3] 음성 생성 중...")
+    generate_audio(slug, "youtube")
+
+    print("\n[3/3] 영상 조합 중...")
+    generate_video(slug, "youtube")
+
+    print(f"\n🎉 완료! → Outputs/{slug}/youtube-video.mp4")
+    print("유튜브 업로드만 하면 끝이에요!")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python3 scripts/produce.py <slug> [shorts|youtube|industry]")
+        sys.exit(1)
+
+    vtype = sys.argv[2] if len(sys.argv) > 2 else "shorts"
+    if vtype == "industry":
+        produce_industry(sys.argv[1])
+    else:
+        produce(slug=sys.argv[1], video_type=vtype)

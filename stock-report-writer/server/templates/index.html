@@ -175,13 +175,16 @@
 <body>
 
   <h1>📊 리포트읽어드림</h1>
-  <p class="sub">증권사 리포트 이미지를 올리면 자동으로 영상을 만들어드려요</p>
+  <p class="sub">증권사 리포트를 올리면 자동으로 영상을 만들어드려요</p>
 
   <!-- 업로드 영역 -->
   <div class="dropzone" id="dropzone">
     <div class="icon">📄</div>
-    <div style="font-size:18px; font-weight:600;">리포트 이미지를 여기에 끌어다 놓으세요</div>
-    <div class="hint">PNG, JPG, PDF 파일 지원 · 클릭해서 파일 선택도 가능해요</div>
+    <div style="font-size:18px; font-weight:600;">리포트를 여기에 끌어다 놓으세요</div>
+    <div class="hint" style="line-height:1.8">
+      🖼 PNG · JPG → <strong style="color:#fff">종목 리포트</strong> · 쇼츠 (45초)<br>
+      📄 PDF → <strong style="color:#fff">산업 리포트</strong> · 롱폼 (5~7분)
+    </div>
     <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.pdf">
     <button class="btn" onclick="document.getElementById('fileInput').click()">파일 선택</button>
   </div>
