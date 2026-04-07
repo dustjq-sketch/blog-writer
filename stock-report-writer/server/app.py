@@ -220,7 +220,7 @@ def create_content_files(slug: str, d: dict):
 #{name} #주식 #증권사리포트 #목표주가 #쇼츠
 
 ---
-*본 영상은 리포트를 읽어드리는 것이며 매수, 매도 추천이 아니며 투자에 대한 책임은 본인에게 있습니다.*
+*출처: {broker} 리포트 ({date})*
 """, encoding="utf-8")
 
     # thumbnail-prompts.md
@@ -520,7 +520,6 @@ def create_term_files(slug: str, d: dict):
 {catchphrase}. 구독하고 다음 용어도 알아가세요!"
 
 ---
-*본 영상은 정보 제공 목적이며 투자 권유가 아닙니다.*
 """, encoding="utf-8")
 
 
@@ -765,7 +764,7 @@ def create_industry_files(slug: str, d: dict):
 #{industry} #증권사리포트 #산업분석 #주식 #투자
 
 ---
-*본 영상은 리포트를 읽어드리는 것이며 매수, 매도 추천이 아니며 투자에 대한 책임은 본인에게 있습니다.*
+*출처: {broker} 리포트 ({date})*
 """, encoding="utf-8")
 
 
