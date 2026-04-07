@@ -622,12 +622,11 @@
   function renderSelectedFiles() {
     const box = document.getElementById('selectedFiles');
     const btn = document.getElementById('makeVideoBtn');
-    const countEl = document.getElementById('imgUploadCount');
     box.innerHTML = '';
 
     if (accumulatedFiles.length === 0) {
       btn.disabled = true;
-      countEl.textContent = '0';
+      btn.textContent = '🎬 영상 제작 시작';
       return;
     }
 
@@ -649,8 +648,6 @@
     clearBtn.onclick = clearFiles;
     box.appendChild(clearBtn);
 
-    const countEl = document.getElementById('imgUploadCount');
-    if (countEl) countEl.textContent = accumulatedFiles.length;
     btn.textContent = `🎬 영상 제작 시작 (${accumulatedFiles.length}장)`;
     btn.disabled = false;
   }
