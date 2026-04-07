@@ -85,7 +85,11 @@ def make_slug(data: dict) -> str:
     }
     name = data.get("stock_name") or ""
     code = data.get("stock_code") or "0"
-    date = (data.get("date") or "").replace("-", "")
+    raw_date = data.get("date") or ""
+    # N/A, 없음, 미상 등 무효값 처리
+    if raw_date.strip() in ("N/A", "n/a", "없음", "미상", "unknown", "-"):
+        raw_date = ""
+    date = re.sub(r"[^\d]", "", raw_date)  # 숫자만 남기기 (슬래시 등 제거)
     en = name_map.get(name, f"s{code}")
     return f"{en}-{date}" if date else en
 
