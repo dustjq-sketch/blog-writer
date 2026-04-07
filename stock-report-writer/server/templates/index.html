@@ -200,6 +200,56 @@
     .reset-btn { display: none; margin-top: 12px; background: none; border: 1px solid #2a4a6a; color: #8899aa; padding: 8px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; }
     .reset-btn:hover { border-color: #fff; color: #fff; }
     .reset-btn.show { display: inline-block; }
+
+    /* 이미지 프롬프트 + 업로드 패널 */
+    .prompts-panel {
+      display: none; width: 100%; max-width: 560px;
+      margin-top: 20px; background: #162233; border-radius: 16px; padding: 24px;
+    }
+    .prompts-panel.show { display: block; }
+    .prompts-panel h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+    .prompts-panel .sub-hint { color: #8899aa; font-size: 13px; margin-bottom: 18px; line-height: 1.7; }
+
+    .prompt-card {
+      background: #0d1f30; border-radius: 12px; padding: 16px; margin-bottom: 14px;
+      border: 1px solid #2a4a6a;
+    }
+    .prompt-card .card-title {
+      font-size: 13px; font-weight: 700; color: #60a5fa; margin-bottom: 10px;
+    }
+    .prompt-card .prompt-text {
+      font-size: 12px; color: #ccd6e0; line-height: 1.6; white-space: pre-wrap;
+      word-break: break-word; max-height: 120px; overflow-y: auto;
+      background: #091828; border-radius: 8px; padding: 10px; margin-bottom: 10px;
+    }
+    .copy-btn {
+      padding: 6px 16px; background: #1e3050; border: 1px solid #2a4a6a;
+      border-radius: 8px; color: #aabbcc; font-size: 12px; cursor: pointer;
+    }
+    .copy-btn:hover { background: #2a4a6a; color: #fff; }
+    .copy-btn.copied { border-color: #16a34a; color: #4ade80; }
+
+    /* 이미지 업로드 드롭존 */
+    .img-upload-zone {
+      margin-top: 20px; border: 2px dashed #2a4a6a; border-radius: 14px;
+      padding: 28px; text-align: center; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .img-upload-zone:hover, .img-upload-zone.drag-over { border-color: #3b82f6; background: #0d2040; }
+    .img-upload-zone p { color: #8899aa; font-size: 14px; margin-bottom: 10px; }
+    .img-upload-zone .count-hint { font-size: 12px; color: #556677; margin-top: 8px; }
+    input[type="file"]#imagesInput { display: none; }
+
+    .selected-files { margin-top: 12px; font-size: 13px; color: #aabbcc; text-align: left; }
+    .selected-files div { padding: 4px 0; border-bottom: 1px solid #1e3050; }
+
+    .make-video-btn {
+      margin-top: 14px; width: 100%; padding: 14px;
+      background: #3b82f6; color: #fff; border: none;
+      border-radius: 50px; font-size: 16px; font-weight: 700; cursor: pointer;
+    }
+    .make-video-btn:hover { background: #2563eb; }
+    .make-video-btn:disabled { background: #444; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -312,17 +362,42 @@
     <button class="reset-btn" id="resetBtn" onclick="reset()">↩ 새로 만들기</button>
   </div>
 
+  <!-- 이미지 프롬프트 + 업로드 패널 -->
+  <div class="prompts-panel" id="promptsPanel">
+    <h3>🖼 이미지 프롬프트</h3>
+    <div class="sub-hint" id="promptsHint">
+      각 프롬프트를 복사해서 <strong>Gemini</strong> 또는 <strong>이미지 생성 AI</strong>에 붙여넣어 이미지를 만드세요.<br>
+      이미지를 모두 생성한 뒤 아래에 업로드하면 영상이 자동 제작됩니다.
+    </div>
+    <div id="promptsList"></div>
+
+    <!-- 이미지 업로드 -->
+    <div class="img-upload-zone" id="imgUploadZone"
+         onclick="document.getElementById('imagesInput').click()"
+         ondragover="imgDragOver(event)" ondragleave="imgDragLeave()" ondrop="imgDrop(event)">
+      <p>📁 생성한 이미지를 여기에 드래그하거나 클릭하세요</p>
+      <div class="count-hint" id="imgCountHint">필요한 이미지 수: —</div>
+      <input type="file" id="imagesInput" multiple accept=".png,.jpg,.jpeg" onchange="imagesSelected()">
+    </div>
+    <div class="selected-files" id="selectedFiles"></div>
+    <button class="make-video-btn" id="makeVideoBtn" onclick="makeVideo()" disabled>
+      🎬 영상 제작 시작
+    </button>
+  </div>
+
 <script>
   let jobId = null, pollTimer = null, currentSlug = null, currentMode = 'report';
+  let currentVtype = null, currentImgCount = 0;
 
-  const dropzone   = document.getElementById('dropzone');
-  const fileInput  = document.getElementById('fileInput');
-  const statusBox  = document.getElementById('statusBox');
-  const statusMsg  = document.getElementById('statusMsg');
+  const dropzone     = document.getElementById('dropzone');
+  const fileInput    = document.getElementById('fileInput');
+  const statusBox    = document.getElementById('statusBox');
+  const statusMsg    = document.getElementById('statusMsg');
   const progressFill = document.getElementById('progressFill');
-  const openBtn    = document.getElementById('openBtn');
-  const errorMsg   = document.getElementById('errorMsg');
-  const resetBtn   = document.getElementById('resetBtn');
+  const openBtn      = document.getElementById('openBtn');
+  const errorMsg     = document.getElementById('errorMsg');
+  const resetBtn     = document.getElementById('resetBtn');
+  const promptsPanel = document.getElementById('promptsPanel');
 
   function setMode(mode) {
     currentMode = mode;
@@ -338,7 +413,7 @@
     document.getElementById('termInput').focus();
   }
 
-  // 드래그앤드롭
+  // 리포트 드래그앤드롭
   dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
   dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
   dropzone.addEventListener('drop', e => {
@@ -361,6 +436,7 @@
   function showStatus() {
     document.getElementById('panelReport').style.display = 'none';
     document.getElementById('panelTerm').style.display = 'none';
+    promptsPanel.classList.remove('show');
     statusBox.classList.add('show');
     openBtn.classList.remove('show');
     errorMsg.classList.remove('show');
@@ -400,19 +476,127 @@
       const data = await r.json();
       statusMsg.textContent = data.message || '처리 중...';
       setStep(data.step || 1);
-      if (data.status === 'complete') {
+
+      if (data.status === 'prompts_ready') {
+        // 콘텐츠 생성 완료 → 이미지 프롬프트 표시
+        clearInterval(pollTimer);
+        currentSlug   = data.slug;
+        currentVtype  = data.vtype;
+        currentImgCount = data.img_count || 0;
+        setStep(2);
+        resetBtn.classList.add('show');
+        showPrompts(data.prompts, data.img_count);
+
+      } else if (data.status === 'complete') {
         clearInterval(pollTimer);
         currentSlug = data.slug;
         progressFill.style.width = '100%';
         setStep(4);
+        promptsPanel.classList.remove('show');
         openBtn.classList.add('show');
         resetBtn.classList.add('show');
         openBtn.onclick = () => fetch('/open/' + currentSlug);
+
       } else if (data.status === 'error') {
         clearInterval(pollTimer);
         showError(data.message);
       }
     }, 2000);
+  }
+
+  // ── 이미지 프롬프트 표시 ──
+  function showPrompts(prompts, imgCount) {
+    const list = document.getElementById('promptsList');
+    list.innerHTML = '';
+    (prompts || []).forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'prompt-card';
+      const titleKey = p.title || `이미지 ${p.idx || p.card || p.slide}`;
+      const promptText = p.prompt || '';
+      card.innerHTML = `
+        <div class="card-title">${titleKey}</div>
+        <div class="prompt-text" id="pt-${p.idx || p.card || p.slide}">${promptText}</div>
+        <button class="copy-btn" onclick="copyPrompt(this, '${encodeURIComponent(promptText)}')">복사</button>
+      `;
+      list.appendChild(card);
+    });
+
+    document.getElementById('imgCountHint').textContent =
+      `필요한 이미지 수: ${imgCount}장 (순서대로 선택하세요)`;
+    promptsPanel.classList.add('show');
+  }
+
+  function copyPrompt(btn, encoded) {
+    navigator.clipboard.writeText(decodeURIComponent(encoded)).then(() => {
+      btn.textContent = '✓ 복사됨';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  // ── 이미지 업로드존 (프롬프트 패널) ──
+  function imgDragOver(e) {
+    e.preventDefault();
+    document.getElementById('imgUploadZone').classList.add('drag-over');
+  }
+  function imgDragLeave() {
+    document.getElementById('imgUploadZone').classList.remove('drag-over');
+  }
+  function imgDrop(e) {
+    e.preventDefault();
+    document.getElementById('imgUploadZone').classList.remove('drag-over');
+    const dt = e.dataTransfer;
+    if (dt.files.length > 0) {
+      document.getElementById('imagesInput').files = dt.files;
+      renderSelectedFiles(dt.files);
+    }
+  }
+  function imagesSelected() {
+    const files = document.getElementById('imagesInput').files;
+    renderSelectedFiles(files);
+  }
+  function renderSelectedFiles(files) {
+    const box = document.getElementById('selectedFiles');
+    box.innerHTML = '';
+    const btn = document.getElementById('makeVideoBtn');
+    if (!files || files.length === 0) { btn.disabled = true; return; }
+    Array.from(files).forEach((f, i) => {
+      const d = document.createElement('div');
+      d.textContent = `${i+1}. ${f.name}`;
+      box.appendChild(d);
+    });
+    btn.disabled = false;
+  }
+
+  function makeVideo() {
+    const files = document.getElementById('imagesInput').files;
+    if (!files || files.length === 0) { alert('이미지를 먼저 선택해주세요'); return; }
+    if (!currentSlug) { alert('slug가 없어요'); return; }
+
+    const btn = document.getElementById('makeVideoBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ 업로드 중...';
+
+    const fd = new FormData();
+    fd.append('slug', currentSlug);
+    fd.append('vtype', currentVtype || 'term');
+    Array.from(files).forEach(f => fd.append('images', f));
+
+    fetch('/upload-images', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) throw new Error(data.error);
+        jobId = data.job_id;
+        btn.textContent = '🎬 영상 제작 중...';
+        statusMsg.textContent = '🎙️ 음성 생성 중...';
+        setStep(3);
+        pollStatus();
+      })
+      .catch(e => {
+        btn.disabled = false;
+        btn.textContent = '🎬 영상 제작 시작';
+        showError(e.message);
+      });
   }
 
   function showError(msg) {
@@ -423,12 +607,18 @@
 
   function reset() {
     clearInterval(pollTimer);
-    jobId = null; currentSlug = null;
+    jobId = null; currentSlug = null; currentVtype = null; currentImgCount = 0;
     statusBox.classList.remove('show');
+    promptsPanel.classList.remove('show');
     openBtn.classList.remove('show');
     errorMsg.classList.remove('show');
     resetBtn.classList.remove('show');
     fileInput.value = '';
+    document.getElementById('imagesInput').value = '';
+    document.getElementById('selectedFiles').innerHTML = '';
+    document.getElementById('makeVideoBtn').disabled = true;
+    document.getElementById('makeVideoBtn').textContent = '🎬 영상 제작 시작';
+    document.getElementById('promptsList').innerHTML = '';
     progressFill.style.width = '0%';
     [1,2,3,4].forEach(i => document.getElementById('step' + i).classList.remove('active','done'));
     setMode(currentMode);

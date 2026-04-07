@@ -7,6 +7,7 @@ import os, subprocess, threading, uuid, json, re, io, traceback
 from pathlib import Path
 from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
+import datetime as _d
 
 BASE_DIR = Path(__file__).parent.parent
 load_dotenv(BASE_DIR / ".env")
@@ -251,6 +252,138 @@ Bottom: White text "{broker} | {r1t}"
 
 
 # ─────────────────────────────────────────
+# 이미지 프롬프트 생성 (Gemini 이미지 생성용)
+# ─────────────────────────────────────────
+
+def create_stock_image_prompts(d: dict) -> list:
+    """종목 리포트 쇼츠 카드 3장 이미지 프롬프트"""
+    name    = d.get("stock_name") or ""
+    broker  = d.get("broker") or ""
+    opinion = d.get("opinion") or "BUY"
+    target  = d.get("target_price") or ""
+    current = d.get("current_price") or ""
+    upside  = d.get("upside") or ""
+    r1t = d.get("reason1_title") or ""
+    r1b = d.get("reason1_body") or ""
+    r2t = d.get("reason2_title") or ""
+    r2b = d.get("reason2_body") or ""
+    r3t = d.get("reason3_title") or ""
+    r3b = d.get("reason3_body") or ""
+    risk = d.get("risk") or ""
+
+    base = ("1080x1920 세로형 카드 이미지(YouTube Shorts). "
+            "짙은 네이비 배경(#0D1B2A), 흰색 텍스트, 빨간색(#DC2626) 포인트 색상. "
+            "전문적인 한국 증권사 리포트 카드 디자인. 한국어로 작성.")
+
+    return [
+        {"idx": 1, "title": "카드 1 — 종목 개요",
+         "prompt": f"{base}\n상단 소형 텍스트: '{broker}'. 중앙에 '{name}' 큰 굵은 흰색 제목. "
+                   f"빨간 배지: '{opinion}'. 목표주가 '{target}' 강조(빨간 대형 텍스트). "
+                   f"현재가 '{current}' · 상승여력 '{upside}'(녹색 또는 빨간 화살표 포함). "
+                   f"하단: '리포트 핵심만 알려드릴게요!'"},
+        {"idx": 2, "title": "카드 2 — 핵심 분석 3가지",
+         "prompt": f"{base}\n상단: '{name}' 제목. 세로로 3개 카드:\n"
+                   f"① '{r1t}': {r1b}\n② '{r2t}': {r2b}\n③ '{r3t}': {r3b}\n"
+                   f"하단 경고 박스: '리스크: {risk}'"},
+        {"idx": 3, "title": "카드 3 — 요약 + 구독 CTA",
+         "prompt": f"{base}\n상단: '리포트읽어드림' 채널명(회색 소형). 중앙: '{name}' + '{opinion}' 큰 텍스트. "
+                   f"목표주가 '{target}' 강조. 하단: '구독하고 다음 리포트도 받아가세요!'(빨간 텍스트)"},
+    ]
+
+
+def create_industry_image_prompts(d: dict) -> list:
+    """산업 리포트 롱폼 슬라이드 이미지 프롬프트 (최대 8장)"""
+    industry = d.get("industry_name") or "산업"
+    title    = d.get("report_title") or ""
+    broker   = d.get("broker") or ""
+    date     = d.get("date") or ""
+    summary  = d.get("summary_points") or []
+    state    = d.get("current_state") or ""
+    trends   = d.get("trends") or []
+    metrics  = d.get("key_metrics") or []
+    outlook  = d.get("outlook") or ""
+    invest   = d.get("investment_points") or []
+    risks    = d.get("risks") or []
+    concl    = d.get("conclusion") or ""
+
+    base = ("1920x1080 가로형 슬라이드 이미지(YouTube 롱폼). "
+            "짙은 네이비 배경(#0D1B2A), 흰색 텍스트, 파란색(#3B82F6) 포인트 색상. "
+            "전문적인 한국 증권사 산업 리포트 프레젠테이션 스타일. 한국어로 작성.")
+
+    t = [trends[i] if i < len(trends) else {"title": "", "body": ""} for i in range(3)]
+    ip = (invest + [""] * 3)[:3]
+    r  = (risks  + [""] * 2)[:2]
+    sp = (summary + [""] * 4)[:4]
+    mt = "\n".join(f"- {m.get('item','')}: {m.get('value','')} ({m.get('change','')})" for m in metrics[:6])
+
+    return [
+        {"idx": 1, "title": "슬라이드 1 — 타이틀",
+         "prompt": f"{base}\n중앙에 '{industry} 산업 리포트' 대형 제목. 부제: '{title}'. "
+                   f"우상단: '{broker} | {date}'. 하단: 핵심 포인트 4가지를 작은 배지로 표시:\n{chr(10).join(f'• {p}' for p in sp)}"},
+        {"idx": 2, "title": "슬라이드 2 — 현황",
+         "prompt": f"{base}\n좌측 타이틀: '{industry} 현황'. 우측 또는 하단에 설명 텍스트: '{state[:200]}'"},
+        {"idx": 3, "title": f"슬라이드 3 — 트렌드①: {t[0].get('title','')}",
+         "prompt": f"{base}\n상단: '트렌드 ①' 배지. 중앙 제목: '{t[0].get('title','')}'. "
+                   f"본문: '{t[0].get('body','')[:200]}'"},
+        {"idx": 4, "title": f"슬라이드 4 — 트렌드②: {t[1].get('title','')}",
+         "prompt": f"{base}\n상단: '트렌드 ②' 배지. 중앙 제목: '{t[1].get('title','')}'. "
+                   f"본문: '{t[1].get('body','')[:200]}'"},
+        {"idx": 5, "title": f"슬라이드 5 — 트렌드③: {t[2].get('title','')}",
+         "prompt": f"{base}\n상단: '트렌드 ③' 배지. 중앙 제목: '{t[2].get('title','')}'. "
+                   f"본문: '{t[2].get('body','')[:200]}'"},
+        {"idx": 6, "title": "슬라이드 6 — 핵심 지표",
+         "prompt": f"{base}\n타이틀: '핵심 지표'. 표 형태로 아래 수치 표시:\n{mt}"},
+        {"idx": 7, "title": "슬라이드 7 — 전망",
+         "prompt": f"{base}\n타이틀: '향후 전망'. 본문: '{outlook[:300]}'"},
+        {"idx": 8, "title": "슬라이드 8 — 투자 포인트 & 결론",
+         "prompt": f"{base}\n타이틀: '투자 포인트'. 3개 항목:\n"
+                   f"① {ip[0]}\n② {ip[1]}\n③ {ip[2]}\n"
+                   f"하단 결론 박스: '{concl[:150]}'. "
+                   f"리스크 메모: '{r[0]}' / '{r[1]}'"},
+    ]
+
+
+def create_term_image_prompts(d: dict) -> list:
+    """경제 용어 쇼츠 카드 4장 이미지 프롬프트"""
+    term        = d.get("term") or ""
+    english     = d.get("english") or ""
+    one_line    = d.get("one_line") or ""
+    why_know    = d.get("why_know") or ""
+    what_means  = d.get("what_means") or ""
+    analogy     = d.get("analogy") or ""
+    mi          = (d.get("money_impact") or []) + [""] * 3
+    ks          = (d.get("key_summary") or []) + [""] * 3
+    catchphrase = d.get("catchphrase") or ""
+
+    base = ("1080x1920 세로형 카드 이미지(YouTube Shorts). "
+            "따뜻한 크림색 배경(#FFF8EE), 오렌지(#EA580C) 포인트 색상. "
+            "상단에 오렌지 헤더 바('경제 용어 한방 정리' 흰색 텍스트). "
+            "하단에 짙은 네이비 바('구독하고 다음 용어도 알아가세요!' 흰색). "
+            "깔끔한 한국어 경제 교육 카드 디자인. 한국어로 작성.")
+
+    return [
+        {"idx": 1, "title": "카드 1 — 소개 + 한 줄 요약",
+         "prompt": f"{base}\n중앙에 '{term}' 큰 굵은 검정 제목. 부제: '({english})' 회색. "
+                   f"오렌지 박스(라벨 '한 줄 요약'): '{one_line}'. "
+                   f"아래 '왜 알아야 할까요?' 오렌지 제목 + 흰색 박스: '{why_know}'"},
+        {"idx": 2, "title": "카드 2 — 무슨 뜻인가요?",
+         "prompt": f"{base}\n상단: '{term}' 제목 + '무슨 뜻인가요?' 오렌지 부제. "
+                   f"흰색 카드 박스: '{what_means[:150]}'. "
+                   f"연한 오렌지 카드 박스(라벨 '쉽게 비유하면요'): '{analogy}'"},
+        {"idx": 3, "title": "카드 3 — 내 돈에 미치는 영향",
+         "prompt": f"{base}\n상단: '{term}' 제목 + '내 돈에 미치는 영향' 오렌지 부제. "
+                   f"세로로 3개 흰색 카드(왼쪽 오렌지 ▶ 아이콘):\n"
+                   f"① {mi[0]}\n② {mi[1]}\n③ {mi[2]}\n"
+                   f"하단 오렌지 박스: '\"{catchphrase}\"'"},
+        {"idx": 4, "title": "카드 4 — 핵심 요약",
+         "prompt": f"{base}\n헤더 바: '핵심 요약'. 상단: '{term}' 제목 + '이것만 기억하세요!' 회색 부제. "
+                   f"세로로 3개 흰색 카드(왼쪽 오렌지 원에 번호 1·2·3):\n"
+                   f"① {ks[0]}\n② {ks[1]}\n③ {ks[2]}\n"
+                   f"하단 오렌지 박스: '\"{catchphrase}\" — 경제 용어 한방 정리'"},
+    ]
+
+
+# ─────────────────────────────────────────
 # 경제 용어 설명 생성
 # ─────────────────────────────────────────
 
@@ -400,19 +533,17 @@ def process_term_job(job_id: str, term: str):
         jobs[job_id].update({"step": 2, "message": "📝 콘텐츠 파일 생성 중..."})
         create_term_files(slug, data)
 
-        jobs[job_id].update({"step": 3, "message": "🎬 카드·음성·영상 생성 중..."})
-        result = subprocess.run(
-            ["python3", str(BASE_DIR / "scripts" / "produce.py"), slug, "term"],
-            capture_output=True, text=True, cwd=str(BASE_DIR),
-        )
-        if result.returncode != 0:
-            err = (result.stderr or result.stdout or "알 수 없는 오류")[-400:]
-            raise RuntimeError(err)
+        # 이미지 프롬프트 생성
+        prompts = create_term_image_prompts(data)
 
         jobs[job_id].update({
-            "status": "complete", "step": 4,
-            "message": f"✅ 완료! Outputs/{slug} 폴더를 확인하세요.",
+            "status": "prompts_ready",
+            "step": 2,
+            "message": f"✅ '{term}' 콘텐츠 생성 완료!\n이미지를 생성 후 업로드해주세요.",
             "slug": slug,
+            "vtype": "term",
+            "prompts": prompts,
+            "img_count": len(prompts),
         })
     except Exception as e:
         tb = traceback.format_exc()
@@ -656,11 +787,16 @@ def process_job(job_id: str, image_path: Path):
             jobs[job_id].update({"step": 2, "message": f"📝 {industry} 콘텐츠 파일 생성 중..."})
             create_industry_files(slug, data)
 
-            jobs[job_id].update({"step": 3, "message": "🎬 슬라이드·음성·영상 생성 중... (약 3분)"})
-            result = subprocess.run(
-                ["python3", str(BASE_DIR / "scripts" / "produce.py"), slug, "industry"],
-                capture_output=True, text=True, cwd=str(BASE_DIR),
-            )
+            prompts = create_industry_image_prompts(data)
+            jobs[job_id].update({
+                "status": "prompts_ready",
+                "step": 2,
+                "message": f"✅ '{industry} 산업' 콘텐츠 생성 완료!\n슬라이드 이미지를 생성 후 업로드해주세요.",
+                "slug": slug,
+                "vtype": "industry",
+                "prompts": prompts,
+                "img_count": len(prompts),
+            })
         else:
             # ── 종목 리포트 쇼츠 파이프라인 ──
             jobs[job_id].update({"step": 1, "message": "📊 리포트 분석 중... (약 10초)"})
@@ -671,22 +807,16 @@ def process_job(job_id: str, image_path: Path):
             jobs[job_id].update({"step": 2, "message": f"📝 {stock} 콘텐츠 파일 생성 중..."})
             create_content_files(slug, data)
 
-            jobs[job_id].update({"step": 3, "message": "🎬 이미지·음성·영상 생성 중... (약 1분)"})
-            result = subprocess.run(
-                ["python3", str(BASE_DIR / "scripts" / "produce.py"), slug, "shorts"],
-                capture_output=True, text=True, cwd=str(BASE_DIR),
-            )
-
-        if result.returncode != 0:
-            err = (result.stderr or result.stdout or "알 수 없는 오류")[-400:]
-            raise RuntimeError(err)
-
-        jobs[job_id].update({
-            "status": "complete",
-            "step": 4,
-            "message": f"✅ 완료! Outputs/{slug} 폴더를 확인하세요.",
-            "slug": slug,
-        })
+            prompts = create_stock_image_prompts(data)
+            jobs[job_id].update({
+                "status": "prompts_ready",
+                "step": 2,
+                "message": f"✅ '{stock}' 콘텐츠 생성 완료!\n카드 이미지를 생성 후 업로드해주세요.",
+                "slug": slug,
+                "vtype": "stock",
+                "prompts": prompts,
+                "img_count": len(prompts),
+            })
 
     except Exception as e:
         tb = traceback.format_exc()
@@ -736,6 +866,72 @@ def term_endpoint():
     jobs[job_id] = {"status": "processing", "step": 0, "message": "⏳ 시작 중..."}
     threading.Thread(target=process_term_job, args=(job_id, term), daemon=True).start()
     return jsonify({"job_id": job_id})
+
+
+@app.route("/upload-images", methods=["POST"])
+def upload_images():
+    """업로드된 이미지로 영상 제작 시작"""
+    slug  = request.form.get("slug", "").strip()
+    vtype = request.form.get("vtype", "term")  # term / stock / industry
+    if not slug:
+        return jsonify({"error": "slug가 없어요"}), 400
+
+    images_dir = OUTPUTS_DIR / slug / "images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+
+    # 기존 이미지 제거 후 새 이미지 저장
+    for old in images_dir.glob("*.png"):
+        old.unlink()
+    for old in images_dir.glob("*.jpg"):
+        old.unlink()
+
+    files = request.files.getlist("images")
+    if not files or not files[0].filename:
+        return jsonify({"error": "이미지 파일이 없어요"}), 400
+
+    for i, f in enumerate(files):
+        ext = Path(f.filename).suffix.lower() or ".png"
+        if ext not in {".png", ".jpg", ".jpeg"}:
+            continue
+        save_path = images_dir / f"{slug}-img-{i+1:02d}{ext}"
+        f.save(str(save_path))
+
+    job_id = str(uuid.uuid4())[:8]
+    jobs[job_id] = {"status": "processing", "step": 2, "message": "⏳ 영상 제작 시작..."}
+    threading.Thread(target=process_video_job, args=(job_id, slug, vtype), daemon=True).start()
+    return jsonify({"job_id": job_id})
+
+
+def process_video_job(job_id: str, slug: str, vtype: str):
+    """업로드된 이미지 + TTS → 영상 합성"""
+    try:
+        # produce.py에 넘길 vtype 결정
+        if vtype == "term":
+            produce_vtype = "term-video"
+        elif vtype == "industry":
+            produce_vtype = "industry-video"
+        else:
+            produce_vtype = "shorts-video"
+
+        jobs[job_id].update({"step": 3, "message": "🎙️ 음성 생성 중..."})
+        result = subprocess.run(
+            ["python3", str(BASE_DIR / "scripts" / "produce.py"), slug, produce_vtype],
+            capture_output=True, text=True, cwd=str(BASE_DIR),
+        )
+        if result.returncode != 0:
+            err = (result.stderr or result.stdout or "알 수 없는 오류")[-500:]
+            raise RuntimeError(err)
+
+        jobs[job_id].update({
+            "status": "complete",
+            "step": 4,
+            "message": f"✅ 영상 완성! Outputs/{slug} 폴더를 확인하세요.",
+            "slug": slug,
+        })
+    except Exception as e:
+        tb = traceback.format_exc()
+        print(f"[ERROR] {tb}")
+        jobs[job_id].update({"status": "error", "message": f"❌ 오류: {str(e)[:300]}"})
 
 
 @app.route("/open/<slug>")

@@ -1047,13 +1047,36 @@ def produce_industry(slug: str):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python3 scripts/produce.py <slug> [shorts|youtube|industry]")
+        print("Usage: python3 scripts/produce.py <slug> [shorts|youtube|industry|term|term-video|shorts-video|industry-video]")
         sys.exit(1)
 
     vtype = sys.argv[2] if len(sys.argv) > 2 else "shorts"
+    slug  = sys.argv[1]
+
     if vtype == "industry":
-        produce_industry(sys.argv[1])
+        produce_industry(slug)
     elif vtype == "term":
-        produce_term(sys.argv[1])
+        produce_term(slug)
+    elif vtype == "term-video":
+        # 이미지는 이미 업로드됨 → 음성+영상만 생성
+        print(f"\n[1/2] 음성 생성 중...")
+        generate_audio(slug, "shorts", is_term=True)
+        print(f"\n[2/2] 영상 조합 중...")
+        generate_video(slug, "shorts", is_term=True)
+        print(f"\n완료! → Outputs/{slug}/shorts-video.mp4")
+    elif vtype == "shorts-video":
+        # 종목 리포트: 이미지 업로드됨 → 음성+영상만 생성
+        print(f"\n[1/2] 음성 생성 중...")
+        generate_audio(slug, "shorts", is_term=False)
+        print(f"\n[2/2] 영상 조합 중...")
+        generate_video(slug, "shorts", is_term=False)
+        print(f"\n완료! → Outputs/{slug}/shorts-video.mp4")
+    elif vtype == "industry-video":
+        # 산업 리포트: 슬라이드 업로드됨 → 음성+영상만 생성
+        print(f"\n[1/2] 음성 생성 중...")
+        generate_audio(slug, "youtube", is_term=False)
+        print(f"\n[2/2] 영상 조합 중...")
+        generate_video(slug, "youtube", is_term=False)
+        print(f"\n완료! → Outputs/{slug}/youtube-video.mp4")
     else:
-        produce(slug=sys.argv[1], video_type=vtype)
+        produce(slug=slug, video_type=vtype)
