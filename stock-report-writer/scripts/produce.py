@@ -493,7 +493,7 @@ def generate_video(slug: str, video_type: str = "shorts"):
 # ─────────────────────────────────────────
 
 def generate_term_images(slug: str) -> list:
-    """경제 용어 설명 카드 4장 생성"""
+    """경제 용어 카드 4장 생성 - BUGI 스타일 (따뜻한 오렌지/베이지)"""
     from PIL import Image, ImageDraw
 
     summary_file = OUTPUTS_DIR / slug / "summary.md"
@@ -503,45 +503,34 @@ def generate_term_images(slug: str) -> list:
 
     content = summary_file.read_text(encoding="utf-8")
 
-    def extract(pattern, default=""):
-        m = re.search(pattern, content, re.DOTALL)
+    def ex(pattern, default=""):
+        m = re.search(pattern, content)
         return m.group(1).strip() if m else default
 
-    term       = extract(r'^# (.+?) 경제', content[:200].split('\n')[0].replace('# ', '').split(' 경제')[0]) or extract(r'^# (.+)', '')
-    english    = extract(r'\*\*영어\*\*:\s*([^\n]+)', "")
-    category   = extract(r'\*\*카테고리\*\*:\s*([^\n]+)', "")
-    one_line   = extract(r'\*\*한 줄 정의\*\*:\s*([^\n]+)', "")
-    definition = _parse_section(content, "정의")
-
-    # 한 줄 정의 - title에서 직접 추출
-    title_line = content.split('\n')[0].replace('# ', '')
-    term = title_line.split(' 경제')[0].split(' -')[0].strip()
-
-    how_works = _parse_bullets(_parse_section(content, "작동 원리"))
-    key_points = _parse_bullets(_parse_section(content, "핵심 포인트"))
-
-    # 실생활 영향 파싱
-    real_life_raw = _parse_section(content, "실생활 영향")
-    real_life = []
-    for line in real_life_raw.split('\n'):
-        line = line.strip().lstrip('- ').strip()
-        if '→' in line or ':' in line:
-            real_life.append(line)
-        elif line and not line.startswith('#'):
-            real_life.append(line)
-    life_summary = extract(r'\*\*결론\*\*:\s*([^\n]+)', "")
+    # 제목에서 용어명 추출
+    term        = content.split('\n')[0].replace('# ', '').split(' 경제')[0].strip()
+    english     = ex(r'\*\*영어\*\*:\s*([^\n]+)', "")
+    one_line    = ex(r'\*\*한 줄 요약\*\*:\s*([^\n]+)', "")
+    why_know    = _parse_section(content, "왜 알아야 할까요").replace('\n', ' ')
+    what_means  = _parse_section(content, "무슨 뜻인가요").replace('\n', ' ')
+    analogy     = _parse_section(content, "쉬운 비유").replace('\n', ' ')
+    money_items = _parse_bullets(_parse_section(content, "내 돈에 미치는 영향"))
+    key_items   = _parse_bullets(_parse_section(content, "핵심 요약"))
+    catchphrase = ex(r'\*\*슬로건\*\*:\s*([^\n]+)', "")
 
     images_dir = OUTPUTS_DIR / slug / "images"
     images_dir.mkdir(parents=True, exist_ok=True)
 
-    BG      = (13,  27,  42)
-    WHITE   = (255, 255, 255)
-    GRAY    = (160, 170, 185)
-    CARD_BG = (22,  42,  62)
-    BLUE    = (59,  130, 246)
-    GREEN   = (34,  197,  94)
-    ORANGE  = (249, 115,  22)
-    YELLOW  = (250, 204,  21)
+    # ── BUGI 색상 팔레트 (따뜻한 오렌지/베이지) ──
+    WARM_BG     = (255, 248, 238)   # 따뜻한 크림 배경
+    DARK        = (30,  30,  50)    # 어두운 텍스트
+    ORANGE      = (234, 88,  12)    # 메인 오렌지
+    LIGHT_ORG   = (254, 215, 170)   # 연한 오렌지 카드
+    ORANGE_BG   = (249, 115, 22)    # 버튼/강조
+    WHITE       = (255, 255, 255)
+    GRAY        = (107, 114, 128)
+    LIGHT_GRAY  = (243, 244, 246)
+    DARK_GRAY   = (55,  65,  81)
 
     W, H = 1080, 1920
     image_paths = []
@@ -552,129 +541,144 @@ def generate_term_images(slug: str) -> list:
         image_paths.append(out)
         print(f"  ✅ 카드 {idx}: {out.name}")
 
-    def card_footer(d, text="리포트읽어드림"):
-        d.line([(60, H - 90), (W - 60, H - 90)], fill=(40, 60, 80), width=2)
-        d.text((W // 2, H - 50), text, font=_load_font(34), fill=GRAY, anchor="mm")
+    def warm_rounded_rect(d, xy, r, fill, outline=None, outline_width=0):
+        """따뜻한 스타일 둥근 사각형"""
+        _rounded_rect(d, xy, r, fill)
+        if outline:
+            x1, y1, x2, y2 = xy
+            for i in range(outline_width):
+                d.rectangle([x1+i, y1+i, x2-i, y2-i], outline=outline)
 
-    # ══ 카드 1: 용어 정의 ══
-    img = Image.new('RGB', (W, H), BG)
+    def orange_header(d, channel="경제 용어 한방 정리"):
+        """오렌지 상단 헤더바"""
+        d.rectangle([0, 0, W, 130], fill=ORANGE)
+        d.text((W // 2, 65), channel, font=_load_font(40, bold=True), fill=WHITE, anchor="mm")
+
+    def bottom_bar(d, text="구독하고 다음 용어도 알아가세요!"):
+        """하단 CTA 바"""
+        d.rectangle([0, H - 110, W, H], fill=DARK)
+        d.text((W // 2, H - 55), text, font=_load_font(34), fill=WHITE, anchor="mm")
+
+    # ══════════════════════════════════════
+    # 카드 1: 한 줄 요약 + 왜 알아야 할까요?
+    # ══════════════════════════════════════
+    img = Image.new('RGB', (W, H), WARM_BG)
     d = ImageDraw.Draw(img)
+    orange_header(d)
 
-    # 채널명
-    d.text((W // 2, 100), "리포트읽어드림", font=_load_font(38), fill=GRAY, anchor="mm")
-    d.text((W // 2, 155), "경제 용어 한방 정리", font=_load_font(36), fill=(80, 110, 140), anchor="mm")
-
-    # 카테고리 배지
-    if category:
-        cw = len(category) * 24 + 60
-        cx = W // 2 - cw // 2
-        _rounded_rect(d, (cx, 210, cx + cw, 270), 30, BLUE)
-        d.text((W // 2, 240), category, font=_load_font(36, bold=True), fill=WHITE, anchor="mm")
-
-    # 용어명
-    d.text((W // 2, 420), term, font=_load_font(110, bold=True), fill=WHITE, anchor="mm")
+    # 용어명 + 영어
+    d.text((W // 2, 270), term, font=_load_font(110, bold=True), fill=DARK, anchor="mm")
     if english:
-        d.text((W // 2, 545), f"({english})", font=_load_font(46), fill=GRAY, anchor="mm")
+        d.text((W // 2, 380), f"({english})", font=_load_font(44), fill=GRAY, anchor="mm")
 
-    d.line([(60, 615), (W - 60, 615)], fill=(40, 60, 80), width=2)
+    # 한 줄 요약 박스 (오렌지)
+    warm_rounded_rect(d, (60, 430, W - 60, 560), 20, ORANGE)
+    d.text((W // 2, 458), "한 줄 요약", font=_load_font(34, bold=True), fill=LIGHT_ORG, anchor="mm")
+    for i, ln in enumerate(_wrap(one_line, 22)[:2]):
+        d.text((W // 2, 510 + i * 48), ln, font=_load_font(40, bold=True), fill=WHITE, anchor="mm")
 
-    # 한 줄 정의 박스
-    if one_line:
-        _rounded_rect(d, (60, 640, W - 60, 750), 20, CARD_BG)
-        d.text((W // 2, 695), one_line, font=_load_font(42, bold=True), fill=YELLOW, anchor="mm")
+    # 구분선
+    d.line([(60, 600), (W - 60, 600)], fill=LIGHT_ORG, width=3)
 
-    # 설명
-    def_lines = _wrap(definition.replace('\n', ' '), 22)
-    for i, ln in enumerate(def_lines[:5]):
-        d.text((W // 2, 810 + i * 72), ln, font=_load_font(42), fill=WHITE, anchor="mm")
+    # 왜 알아야 할까요
+    d.text((80, 650), "❓ 왜 알아야 할까요?", font=_load_font(46, bold=True), fill=ORANGE, anchor="lm")
+    warm_rounded_rect(d, (60, 700, W - 60, 980), 20, WHITE)
+    for i, ln in enumerate(_wrap(why_know, 20)[:5]):
+        d.text((W // 2, 760 + i * 72), ln, font=_load_font(42), fill=DARK_GRAY, anchor="mm")
 
-    card_footer(d)
+    bottom_bar(d)
     save_card(img, 1)
 
-    # ══ 카드 2: 작동 원리 ══
-    img = Image.new('RGB', (W, H), BG)
+    # ══════════════════════════════════════
+    # 카드 2: 무슨 뜻인가요?
+    # ══════════════════════════════════════
+    img = Image.new('RGB', (W, H), WARM_BG)
     d = ImageDraw.Draw(img)
+    orange_header(d)
 
-    d.text((W // 2, 110), "리포트읽어드림", font=_load_font(38), fill=GRAY, anchor="mm")
-    d.text((W // 2, 240), term, font=_load_font(74, bold=True), fill=WHITE, anchor="mm")
-    d.text((W // 2, 340), "어떻게 작동할까?", font=_load_font(54), fill=ORANGE, anchor="mm")
-    d.line([(60, 400), (W - 60, 400)], fill=(40, 60, 80), width=2)
+    d.text((W // 2, 230), term, font=_load_font(80, bold=True), fill=DARK, anchor="mm")
+    d.text((W // 2, 330), "무슨 뜻인가요?", font=_load_font(56, bold=True), fill=ORANGE, anchor="mm")
 
-    step_labels = ["①", "②", "③"]
-    step_y = 460
-    for i, step in enumerate(how_works[:3]):
-        rh = 220
-        _rounded_rect(d, (60, step_y, W - 60, step_y + rh), 20, CARD_BG)
-        d.text((150, step_y + rh // 2), step_labels[i],
-               font=_load_font(72, bold=True), fill=ORANGE, anchor="mm")
-        d.line([(200, step_y + 40), (200, step_y + rh - 40)], fill=(40, 60, 80), width=2)
-        for j, ln in enumerate(_wrap(step, 16)[:3]):
-            d.text((230, step_y + 70 + j * 60), ln,
-                   font=_load_font(42, bold=True if j == 0 else False),
-                   fill=(WHITE if j == 0 else GRAY), anchor="lm")
-        step_y += rh + 24
+    d.line([(60, 390), (W - 60, 390)], fill=LIGHT_ORG, width=3)
 
-    card_footer(d)
+    # 쉬운 설명 카드
+    warm_rounded_rect(d, (60, 420, W - 60, 820), 22, WHITE)
+    for i, ln in enumerate(_wrap(what_means, 20)[:6]):
+        d.text((W // 2, 490 + i * 72), ln, font=_load_font(42), fill=DARK_GRAY, anchor="mm")
+
+    # 비유 카드 (연한 오렌지)
+    warm_rounded_rect(d, (60, 860, W - 60, 1200), 22, LIGHT_ORG)
+    d.text((W // 2, 910), "💡 쉽게 비유하면요", font=_load_font(42, bold=True), fill=ORANGE, anchor="mm")
+    d.line([(100, 950), (W - 100, 950)], fill=ORANGE, width=2)
+    for i, ln in enumerate(_wrap(analogy, 20)[:5]):
+        d.text((W // 2, 1010 + i * 68), ln, font=_load_font(42), fill=DARK, anchor="mm")
+
+    bottom_bar(d)
     save_card(img, 2)
 
-    # ══ 카드 3: 핵심 포인트 ══
-    img = Image.new('RGB', (W, H), BG)
+    # ══════════════════════════════════════
+    # 카드 3: 내 돈에 미치는 영향
+    # ══════════════════════════════════════
+    img = Image.new('RGB', (W, H), WARM_BG)
     d = ImageDraw.Draw(img)
+    orange_header(d)
 
-    d.text((W // 2, 110), "리포트읽어드림", font=_load_font(38), fill=GRAY, anchor="mm")
-    d.text((W // 2, 240), term, font=_load_font(74, bold=True), fill=WHITE, anchor="mm")
-    d.text((W // 2, 340), "핵심 포인트", font=_load_font(60), fill=GREEN, anchor="mm")
-    d.line([(60, 400), (W - 60, 400)], fill=(40, 60, 80), width=2)
+    d.text((W // 2, 230), term, font=_load_font(80, bold=True), fill=DARK, anchor="mm")
+    d.text((W // 2, 330), "💰 내 돈에 미치는 영향", font=_load_font(52, bold=True), fill=ORANGE, anchor="mm")
+    d.line([(60, 390), (W - 60, 390)], fill=LIGHT_ORG, width=3)
 
-    pt_y = 460
-    for i, pt in enumerate(key_points[:3]):
-        rh = 220
-        _rounded_rect(d, (60, pt_y, W - 60, pt_y + rh), 20, CARD_BG)
-        d.text((140, pt_y + rh // 2), "✦", font=_load_font(60, bold=True), fill=GREEN, anchor="mm")
-        d.line([(195, pt_y + 40), (195, pt_y + rh - 40)], fill=(40, 60, 80), width=2)
-        for j, ln in enumerate(_wrap(pt, 16)[:3]):
-            d.text((225, pt_y + 70 + j * 60), ln,
-                   font=_load_font(42, bold=True if j == 0 else False),
-                   fill=(WHITE if j == 0 else GRAY), anchor="lm")
-        pt_y += rh + 24
+    imp_y = 430
+    for item in money_items[:3]:
+        rh = 200
+        warm_rounded_rect(d, (60, imp_y, W - 60, imp_y + rh), 20, WHITE)
+        d.text((110, imp_y + rh // 2), "▶", font=_load_font(46, bold=True), fill=ORANGE, anchor="mm")
+        d.line([(160, imp_y + 30), (160, imp_y + rh - 30)], fill=LIGHT_ORG, width=2)
+        for j, ln in enumerate(_wrap(item, 18)[:3]):
+            d.text((190, imp_y + 50 + j * 58), ln,
+                   font=_load_font(40, bold=True if j == 0 else False),
+                   fill=(DARK if j == 0 else DARK_GRAY), anchor="lm")
+        imp_y += rh + 20
 
-    card_footer(d)
+    # 슬로건 박스
+    warm_rounded_rect(d, (60, imp_y + 20, W - 60, imp_y + 160), 30, ORANGE)
+    d.text((W // 2, imp_y + 90), f'"{catchphrase}"',
+           font=_load_font(44, bold=True), fill=WHITE, anchor="mm")
+
+    bottom_bar(d)
     save_card(img, 3)
 
-    # ══ 카드 4: 나의 실생활 영향 ══
-    img = Image.new('RGB', (W, H), BG)
+    # ══════════════════════════════════════
+    # 카드 4: 핵심 요약
+    # ══════════════════════════════════════
+    img = Image.new('RGB', (W, H), WARM_BG)
     d = ImageDraw.Draw(img)
+    orange_header(d, "핵심 요약")
 
-    d.text((W // 2, 100), "리포트읽어드림", font=_load_font(38), fill=GRAY, anchor="mm")
-    d.text((W // 2, 215), "💰 나의 실생활 영향", font=_load_font(60, bold=True), fill=YELLOW, anchor="mm")
-    d.text((W // 2, 305), term, font=_load_font(52), fill=GRAY, anchor="mm")
-    d.line([(60, 360), (W - 60, 360)], fill=(40, 60, 80), width=2)
+    d.text((W // 2, 230), term, font=_load_font(80, bold=True), fill=DARK, anchor="mm")
+    d.text((W // 2, 340), "이것만 기억하세요!", font=_load_font(50), fill=GRAY, anchor="mm")
+    d.line([(60, 395), (W - 60, 395)], fill=LIGHT_ORG, width=3)
 
-    rl_y = 400
-    for i, item in enumerate(real_life[:3]):
+    nums = ["1", "2", "3"]
+    ky = 430
+    for i, item in enumerate(key_items[:3]):
         rh = 210
-        _rounded_rect(d, (60, rl_y, W - 60, rl_y + rh), 20, CARD_BG)
-        # 상황과 영향 분리
-        if '→' in item:
-            case, impact = item.split('→', 1)
-        elif ':' in item:
-            case, impact = item.split(':', 1)
-        else:
-            case, impact = item, ""
-        d.text((W // 2, rl_y + 60), case.strip(),
-               font=_load_font(40, bold=True), fill=WHITE, anchor="mm")
-        if impact.strip():
-            d.text((W // 2, rl_y + 130), impact.strip(),
-                   font=_load_font(38), fill=YELLOW, anchor="mm")
-        rl_y += rh + 20
+        warm_rounded_rect(d, (60, ky, W - 60, ky + rh), 20, WHITE)
+        # 번호 원
+        _rounded_rect(d, (80, ky + rh // 2 - 44, 168, ky + rh // 2 + 44), 44, ORANGE)
+        d.text((124, ky + rh // 2), nums[i], font=_load_font(54, bold=True), fill=WHITE, anchor="mm")
+        for j, ln in enumerate(_wrap(item, 17)[:3]):
+            d.text((200, ky + 55 + j * 60), ln,
+                   font=_load_font(40, bold=True if j == 0 else False),
+                   fill=(DARK if j == 0 else DARK_GRAY), anchor="lm")
+        ky += rh + 20
 
-    # 결론
-    if life_summary:
-        _rounded_rect(d, (60, rl_y + 10, W - 60, rl_y + 110), 20, (30, 60, 30))
-        d.text((W // 2, rl_y + 60), life_summary,
-               font=_load_font(42, bold=True), fill=GREEN, anchor="mm")
+    # 최종 슬로건
+    warm_rounded_rect(d, (60, ky + 20, W - 60, ky + 180), 30, ORANGE)
+    d.text((W // 2, ky + 80), f'"{catchphrase}"',
+           font=_load_font(46, bold=True), fill=WHITE, anchor="mm")
+    d.text((W // 2, ky + 148), "— 경제 용어 한방 정리", font=_load_font(32), fill=LIGHT_ORG, anchor="mm")
 
-    card_footer(d)
+    bottom_bar(d, "구독하고 다음 경제 용어도 알아가세요!")
     save_card(img, 4)
 
     return image_paths

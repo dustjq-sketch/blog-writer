@@ -257,28 +257,31 @@ Bottom: White text "{broker} | {r1t}"
 # ─────────────────────────────────────────
 
 def generate_term_content(term: str) -> dict:
-    """Gemini로 경제 용어 설명 생성"""
+    """Gemini로 경제 용어 설명 생성 (BUGI 스타일)"""
     from google import genai
     client = genai.Client(api_key=GEMINI_API_KEY)
 
     prompt = f"""경제 용어 "{term}"을 20~40대 직장인이 쉽게 이해할 수 있도록 설명해줘.
-실생활 영향은 구체적인 금액/수치를 포함해서 설명해줘.
+친근하고 따뜻한 말투로, 실생활 비유와 구체적인 수치를 꼭 포함해줘.
 다른 텍스트 없이 JSON만 출력해줘.
 
 {{
   "term": "{term}",
   "english": "영어명",
-  "category": "카테고리(금리/투자/부동산/거시경제 등)",
-  "one_line": "한 줄 정의(20자 이내)",
-  "definition": "쉬운 설명(3-4문장)",
-  "how_it_works": ["단계1(20자이내)", "단계2(20자이내)", "단계3(20자이내)"],
-  "key_points": ["핵심포인트1(20자이내)", "핵심포인트2(20자이내)", "핵심포인트3(20자이내)"],
-  "real_life": [
-    {{"case": "상황1(15자이내)", "impact": "구체적 영향(수치 포함, 30자이내)"}},
-    {{"case": "상황2(15자이내)", "impact": "구체적 영향(30자이내)"}},
-    {{"case": "상황3(15자이내)", "impact": "구체적 영향(30자이내)"}}
+  "one_line": "한 줄 요약 (~이라고 생각하면 돼요 말투, 25자이내)",
+  "why_know": "왜 알아야 할까요 설명 (모르면 손해보는 이유, 2문장, ~할 수 있어요 말투)",
+  "what_means": "무슨 뜻인가요 쉬운 설명 (2-3문장, 전문 용어 없이)",
+  "analogy": "일상 비유로 설명 (~라면 ~인 셈이죠 형식, 1-2문장)",
+  "money_impact": [
+    "구체적 영향1 (금액/퍼센트 수치 포함, 30자이내)",
+    "구체적 영향2 (수치 포함, 30자이내)"
   ],
-  "life_summary": "핵심 한 줄 결론(20자이내)"
+  "key_summary": [
+    "핵심 정리1 (20자이내)",
+    "핵심 정리2 (20자이내)",
+    "핵심 정리3 (20자이내)"
+  ],
+  "catchphrase": "기억에 남는 한 마디 슬로건 (20자이내)"
 }}"""
 
     response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
@@ -311,47 +314,54 @@ def create_term_files(slug: str, d: dict):
 
     def safe(v): return str(v) if v is not None else ""
 
-    works_md = "\n".join(f"- {safe(w)}" for w in how_works)
-    points_md = "\n".join(f"- {safe(p)}" for p in key_points)
-    real_md = "\n".join(f"- {safe(r.get('case',''))} → {safe(r.get('impact',''))}" for r in real_life)
+    term       = d.get("term") or ""
+    english    = d.get("english") or ""
+    one_line   = d.get("one_line") or ""
+    why_know   = d.get("why_know") or ""
+    what_means = d.get("what_means") or ""
+    analogy    = d.get("analogy") or ""
+    money_impact = d.get("money_impact") or []
+    key_summary  = d.get("key_summary") or []
+    catchphrase  = d.get("catchphrase") or ""
+
+    impact_md = "\n".join(f"- {safe(i)}" for i in money_impact)
+    summary_md = "\n".join(f"- {safe(s)}" for s in key_summary)
 
     (out / "summary.md").write_text(f"""# {term} 경제 용어 설명
 - **영어**: {english}
-- **카테고리**: {category}
-- **한 줄 정의**: {one_line}
+- **한 줄 요약**: {one_line}
 
 ---
 
-## 정의
-{definition}
+## 한 줄 요약
+{one_line}
+
+## 왜 알아야 할까요
+{why_know}
+
+## 무슨 뜻인가요
+{what_means}
+
+## 쉬운 비유
+{analogy}
+
+## 내 돈에 미치는 영향
+{impact_md}
+
+## 핵심 요약
+{summary_md}
+
+**슬로건**: {catchphrase}
 
 ---
-
-## 작동 원리
-{works_md}
-
----
-
-## 핵심 포인트
-{points_md}
-
----
-
-## 실생활 영향
-{real_md}
-
-**결론**: {life_sum}
-
----
-*리포트읽어드림 - 경제 용어 한방 정리*
+*경제 용어 한방 정리*
 """, encoding="utf-8")
 
-    rl = real_life + [{"case": "", "impact": ""}] * 3
-    hw = how_works + [""] * 3
-    kp = key_points + [""] * 3
+    mi = money_impact + [""] * 3
+    ks = key_summary + [""] * 3
 
     (out / "shorts-script.md").write_text(f"""# {term} 쇼츠 스크립트
-**예상 시간**: 약 45초
+**예상 시간**: 약 50초
 
 ---
 
@@ -359,25 +369,32 @@ def create_term_files(slug: str, d: dict):
 
 [후크]
 "'{term}' 아시나요?
-{one_line}인데요.
+{one_line}.
 30초 만에 설명해 드릴게요."
 
 [본론]
-"{definition}
+"왜 알아야 할까요?
+{why_know}
 
-쉽게 말하면요.
-{safe(hw[0])}.
-그 다음 {safe(hw[1])}.
-결국 {safe(hw[2])}."
+무슨 뜻이냐면요.
+{what_means}
+
+쉽게 비유하면요.
+{analogy}"
 
 [결론]
-"실생활에서는요.
-{safe(rl[0].get('case',''))}이면 {safe(rl[0].get('impact',''))}.
-{safe(rl[1].get('case',''))}이면 {safe(rl[1].get('impact',''))}.
-{life_sum}."
+"내 돈에 미치는 영향은요?
+{safe(mi[0])}.
+{safe(mi[1])}.
+
+핵심만 정리하면요.
+첫째, {safe(ks[0])}.
+둘째, {safe(ks[1])}.
+셋째, {safe(ks[2])}."
 
 [CTA]
-"리포트읽어드림 구독하면 이런 경제 용어 계속 쉽게 알려드려요!"
+"{catchphrase}
+구독하고 다음 경제 용어도 알아가세요!"
 
 ---
 *본 영상은 정보 제공 목적이며 투자 권유가 아닙니다.*
