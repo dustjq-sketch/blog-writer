@@ -286,7 +286,7 @@ def create_stock_image_prompts(d: dict) -> list:
              f"④ [핵심 비주얼] 중앙에 큰 섹션:\n"
              f"   - '목표주가' 라벨(소형 회색) 위에\n"
              f"   - '{target}' 초대형 빨간 굵은 숫자 (가장 크게)\n"
-             f"   - 현재가 '{current}' 회색 중형\n"
+             f"   - {'현재가 ' + current + ' 회색 중형' if current else '(현재가 없으면 이 줄 생략)'}\n"
              f"   - 위쪽 화살표(↑) + '{upside}' 녹색 굵은 텍스트 (상승여력 강조)\n"
              f"⑤ 하단: '리포트 핵심만 알려드릴게요!' 흰색 소형"
          )},
