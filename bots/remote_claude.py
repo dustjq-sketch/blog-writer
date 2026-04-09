@@ -4,8 +4,11 @@ Remote Claude Bot
 실행: python bots/remote_claude.py
 """
 import asyncio
+import json
 import logging
 import os
+import uuid
+from datetime import datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -19,6 +22,9 @@ BASE_DIR = Path(__file__).parent.parent
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_CHAT_ID = int(os.getenv('TELEGRAM_CHAT_ID', '0'))
 REMOTE_CLAUDE_POLLING_ENABLED = os.getenv('REMOTE_CLAUDE_POLLING_ENABLED', '').lower() in {'1', 'true', 'yes', 'on'}
+
+CONVERSATIONS_DIR = BASE_DIR / 'data' / 'conversations'
+CONVERSATIONS_DIR.mkdir(parents=True, exist_ok=True)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,6 +43,31 @@ def split_message(text: str) -> list[str]:
     if text:
         chunks.append(text)
     return chunks
+
+
+def save_conversation(user_message: str, assistant_reply: str) -> None:
+    """대화 한 쌍(사용자 + 어시스턴트)을 날짜별 JSON 파일에 기록한다."""
+    today = datetime.now().strftime('%Y-%m-%d')
+    conv_file = CONVERSATIONS_DIR / f"{today}.json"
+
+    conversations = []
+    if conv_file.exists():
+        try:
+            conversations = json.loads(conv_file.read_text(encoding='utf-8'))
+        except Exception:
+            conversations = []
+
+    conversations.append({
+        'id': uuid.uuid4().hex[:8],
+        'timestamp': datetime.now().isoformat(),
+        'user': user_message,
+        'assistant': assistant_reply,
+    })
+
+    conv_file.write_text(
+        json.dumps(conversations, ensure_ascii=False, indent=2),
+        encoding='utf-8',
+    )
 
 
 async def run_claude(prompt: str) -> str:
@@ -69,6 +100,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_chat_action(chat_id=TELEGRAM_CHAT_ID, action="typing")
 
     result = await run_claude(prompt)
+    save_conversation(prompt, result)
 
     for chunk in split_message(result):
         await update.message.reply_text(chunk)

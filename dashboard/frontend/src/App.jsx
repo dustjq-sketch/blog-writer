@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { LayoutDashboard, FileText, BarChart2, BookOpen, Settings, ScrollText, UserCheck } from 'lucide-react'
+import { LayoutDashboard, FileText, BarChart2, BookOpen, Settings, ScrollText, UserCheck, MessageSquare } from 'lucide-react'
 import Overview from './pages/Overview.jsx'
 import Content from './pages/Content.jsx'
 import Analytics from './pages/Analytics.jsx'
@@ -7,11 +7,13 @@ import Novel from './pages/Novel.jsx'
 import SettingsPage from './pages/Settings.jsx'
 import Logs from './pages/Logs.jsx'
 import Assist from './pages/Assist.jsx'
+import Conversations from './pages/Conversations.jsx'
 
 const TABS = [
   { id: 'overview', label: '개요', icon: LayoutDashboard, component: Overview },
   { id: 'content', label: '콘텐츠', icon: FileText, component: Content },
   { id: 'assist', label: '수동모드', icon: UserCheck, component: Assist },
+  { id: 'conversations', label: '대화', icon: MessageSquare, component: Conversations },
   { id: 'analytics', label: '분석', icon: BarChart2, component: Analytics },
   { id: 'novel', label: '소설', icon: BookOpen, component: Novel },
   { id: 'settings', label: '설정', icon: Settings, component: SettingsPage },
