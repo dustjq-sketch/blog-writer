@@ -198,8 +198,16 @@ def _extract_rule_based(article: dict) -> dict:
     if not hook.endswith('?'):
         hook = f'{title[:20]}... 알고 계셨나요?'
 
-    # body: KEY_POINTS 앞 3개
-    body = [p.strip('- ').strip() for p in key_points[:3]] if key_points else [title]
+    # body: KEY_POINTS 앞 3개, 없으면 본문에서 문장 추출
+    if key_points:
+        body = [p.strip('- ').strip() for p in key_points[:3]]
+    else:
+        raw_body = article.get('body', article.get('content', ''))
+        if isinstance(raw_body, str) and raw_body.strip():
+            sentences = [s.strip() for s in re.split(r'[.。!?]\s+', raw_body) if len(s.strip()) > 10]
+            body = sentences[:3] if sentences else [title]
+        else:
+            body = [title]
 
     # closer: 코너별 CTA
     cta_map = {
